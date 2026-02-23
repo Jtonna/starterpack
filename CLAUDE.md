@@ -88,6 +88,11 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       <rule>Tickets track dependencies via the "dependencies" field with type "blocks"</rule>
       <rule>A ticket is ready when all its blocking dependencies are closed</rule>
       <rule>Never close a ticket without completing all workflow phases</rule>
+      <rule>
+        When tickets are created or closed, run the beads-sync-protocol
+        (see docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml) to push changes to main.
+        This is autonomous — no human gate. Only .beads/ files go on BEADS/ sync branches.
+      </rule>
     </rules>
   </beads>
 

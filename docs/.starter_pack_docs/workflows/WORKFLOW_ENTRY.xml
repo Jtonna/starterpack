@@ -40,7 +40,8 @@
         </action>
         <action>Present the full ticket breakdown to the human for approval before starting any work</action>
         <gate>BLOCKED — Do not proceed. Human approval of the ticket breakdown is required before starting any child ticket work.</gate>
-        <action>Once approved, pick the first ready ticket (bd ready) and proceed to PLANNING workflow</action>
+        <action>Once approved, run the beads-sync-protocol to push ticket changes to main (see below)</action>
+        <action>Pick the first ready ticket (bd ready) and proceed to PLANNING workflow</action>
       </actions>
       <status-message>executing ENTRY/SPEC_FILE — decomposing spec into tickets</status-message>
     </entry>
@@ -57,6 +58,7 @@
           - Use the human's request as the description basis
         </action>
         <action>Confirm the ticket with the human: "Created {ticket-id}: {title}. Proceeding with this."</action>
+        <action>Run the beads-sync-protocol to push ticket changes to main (see below)</action>
         <action>Proceed to PLANNING workflow with the new ticket</action>
       </actions>
       <rule>
@@ -121,6 +123,45 @@
       - AD_HOC_REQUEST → TRUNK_BASED (unless the orchestrator determines during PLANNING/INTAKE that it should be an epic)
     </selection>
   </branching-strategy>
+
+  <beads-sync-protocol>
+    <!--
+      Reusable protocol for syncing beads ticket changes to main. This ensures
+      ticket creation and closing events reach main so the GitHub Actions beads-sync
+      workflow triggers. This protocol is autonomous — no human gate required.
+
+      Triggers:
+      - After ticket creation (ENTRY/SPEC_FILE, ENTRY/AD_HOC_REQUEST)
+      - After child ticket close (IMPLEMENTATION/HANDOFF in FEATURE_BRANCHING)
+      - After final ticket close (PR/SUBMIT)
+
+      Does NOT trigger for:
+      - Sub-task comment updates (bd comment) — these stay local until the feature branch merges
+      - Status changes to in_progress — low-priority metadata
+    -->
+
+    <steps>
+      <step order="1">Note the current branch (or "main" if not on a branch yet)</step>
+      <step order="2">Switch to main and pull latest: git checkout main && git pull</step>
+      <step order="3">Create a short-lived sync branch: git checkout -b BEADS/sync-{ticket-id}</step>
+      <step order="4">Run bd sync to export changes to .beads/issues.jsonl</step>
+      <step order="5">Stage only .beads/ files: git add .beads/</step>
+      <step order="6">Commit: "{ticket-id}: sync beads tickets"</step>
+      <step order="7">Push: git push -u origin BEADS/sync-{ticket-id}</step>
+      <step order="8">Create and auto-merge PR: gh pr create --title "beads: sync tickets" --body "Automated beads sync" && gh pr merge --merge --delete-branch</step>
+      <step order="9">Switch back to the previous branch: git checkout {previous-branch}</step>
+      <step order="10">Pull main into the working branch if on a feature/epic branch: git merge main (to pick up the beads changes)</step>
+    </steps>
+
+    <rules>
+      <rule>Only .beads/ files go on BEADS/ branches — never code, never docs</rule>
+      <rule>This is fully autonomous — no human approval needed</rule>
+      <rule>If the merge into the working branch has conflicts (unlikely for .beads/ files), stop and ask the human</rule>
+      <rule>The orchestrator delegates this to a submitter agent (light tier) — it never runs git commands itself</rule>
+    </rules>
+
+    <status-message>executing BEADS_SYNC — syncing ticket changes to main</status-message>
+  </beads-sync-protocol>
 
   <scope-enforcement>
     <!--
