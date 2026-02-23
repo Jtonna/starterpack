@@ -1,0 +1,41 @@
+<behavior name="documentation-structure" version="1">
+
+  <description>
+    The documentation model for projects using the starterpack. Defines file layouts
+    for single projects and monorepos, plus documentation principles. Documentation
+    should not be extensive — just enough to know how to dig around.
+  </description>
+
+  <applies-to>doc-scout, doc-auditor, doc-writer</applies-to>
+
+  <single-project>
+    <!--
+      README.md                    — What the project is, links to docs/INDEX.md
+      docs/
+        INDEX.md                   — Index of all documentation files
+        ARCHITECTURE.md            — System/service architecture overview
+        {service-or-system}.md     — One doc per service or system (as needed)
+    -->
+  </single-project>
+
+  <monorepo>
+    <!--
+      README.md                    — Repo overview, links to each project
+      docs/
+        INDEX.md                   — Top-level index
+        {project-name}/
+          INDEX.md                 — Project-specific index
+          ARCHITECTURE.md          — Project-specific architecture
+          {service-or-system}.md   — Project-specific service docs
+    -->
+  </monorepo>
+
+  <principles>
+    <principle>README.md is the entry point and must reference docs/INDEX.md</principle>
+    <principle>INDEX.md always exists and references every other doc file</principle>
+    <principle>ARCHITECTURE.md is always present — gives the structural overview</principle>
+    <principle>Think in services and systems — each gets its own doc</principle>
+    <principle>Not extensive — just enough to navigate and understand the codebase</principle>
+  </principles>
+
+</behavior>
