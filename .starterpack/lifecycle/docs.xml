@@ -1,0 +1,107 @@
+<lifecycle name="DOCS">
+
+  <overview>
+    Executed after implementation is approved. Ensures all documentation stays consistent
+    with the codebase. This workflow always runs — even for small changes.
+  </overview>
+
+  <requires-behavior name="documentation-structure" />
+
+  <loop>
+    <!--
+      SCOUT → (NO_CHANGES_NEEDED? → HANDOFF)
+            → (TRIVIAL_CHANGE? → HUMAN_GATE → APPLY → HANDOFF)
+            → (CHANGES_NEEDED? → AUDIT → HUMAN_GATE → APPLY → HANDOFF)
+    -->
+
+    <phase name="SCOUT" order="1">
+      <actor>Orchestrator launches a single Doc Scout agent (reasoning tier)</actor>
+
+      <actions>
+        <action>
+          Review the git diff against main of all changes on the current branch.
+          TRUNK_BASED: this is the single ticket's implementation changes.
+          FEATURE_BRANCHING: this is the full epic diff (all children's changes combined).
+        </action>
+        <action>Read all existing documentation files (README.md, docs/INDEX.md, docs/ARCHITECTURE.md, etc.)</action>
+        <action>Determine if any documentation is now inconsistent, missing, or outdated</action>
+        <action>Check if new services/systems were added that need their own doc file</action>
+        <action>Check if INDEX.md references all doc files</action>
+      </actions>
+
+      <output-options>
+        <option result="NO_CHANGES_NEEDED">
+          Documentation is consistent — skip to HANDOFF.
+        </option>
+        <option result="TRIVIAL_CHANGE">
+          One-line fix identified (e.g. a renamed path). Scout reports the fix back to
+          orchestrator. Orchestrator launches a Doc Writer agent (worker tier) to apply it.
+          Change still goes through HUMAN_GATE — no exceptions.
+        </option>
+        <option result="CHANGES_NEEDED">
+          List of affected doc files and what needs updating — proceed to AUDIT.
+        </option>
+      </output-options>
+
+      <status-message>executing DOCS/SCOUT on {ticket-id} with doc scout agent</status-message>
+    </phase>
+
+    <phase name="AUDIT" order="2" condition="CHANGES_NEEDED">
+      <actor>Orchestrator launches one Doc Auditor agent per affected documentation file (reasoning tier)</actor>
+
+      <agent-receives>
+        <item>The specific doc file to audit</item>
+        <item>The git diff from implementation</item>
+        <item>The codebase context relevant to that doc</item>
+      </agent-receives>
+
+      <agent-produces>
+        <item>File audited</item>
+        <item>Finding description</item>
+        <item>Expected vs actual</item>
+        <item>Severity (low / medium / high)</item>
+        <item>Suggested fix</item>
+      </agent-produces>
+
+      <status-message>executing DOCS/AUDIT on {ticket-id} — auditing {N} doc files</status-message>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="3">
+      <actor>Orchestrator presents findings to the human</actor>
+
+      <presents>
+        <item>Findings grouped by documentation file (or the single trivial fix)</item>
+        <item>Severity levels</item>
+        <item>Suggested fixes</item>
+      </presents>
+
+      <gate>BLOCKED — Do not proceed. Human approval required before continuing.</gate>
+      <note>Human selects which findings to apply. All changes — including trivial ones — require approval.</note>
+      <status-message>awaiting DOCS/HUMAN_GATE on {ticket-id} — BLOCKED: human approval required</status-message>
+    </phase>
+
+    <phase name="APPLY" order="4">
+      <actor>Orchestrator launches Doc Writer agents (worker tier) for approved updates</actor>
+
+      <actions>
+        <action>Update documentation files per approved findings</action>
+        <action>If new doc files are needed, create them following the documentation-structure behavior</action>
+        <action>Update docs/INDEX.md to reference any new files</action>
+        <action>
+          Commit with ticket ID: "{ticket-id}: update documentation"
+          TRUNK_BASED: use the ticket ID.
+          FEATURE_BRANCHING: use the epic ticket ID.
+        </action>
+      </actions>
+
+      <status-message>executing DOCS/APPLY on {ticket-id} — updating {N} doc files</status-message>
+    </phase>
+
+    <phase name="HANDOFF" order="5">
+      <description>Proceed to the PR workflow.</description>
+      <status-message>executing DOCS/HANDOFF on {ticket-id} — transitioning to PR</status-message>
+    </phase>
+
+  </loop>
+
+</lifecycle>

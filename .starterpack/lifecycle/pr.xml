@@ -1,0 +1,71 @@
+<lifecycle name="PR">
+
+  <overview>
+    Executed after documentation audit is complete. Creates the pull request and closes
+    the beads ticket. All operations including git push and PR creation are delegated
+    to sub-agents — the orchestrator never runs commands directly.
+  </overview>
+
+  <loop>
+    <!--
+      PREPARE → HUMAN_GATE → SUBMIT
+                    │
+                    │ rejected → PREPARE
+                    └──────────┘
+    -->
+
+    <phase name="PREPARE" order="1">
+      <actor>Orchestrator launches a PR Drafter agent (reasoning tier)</actor>
+
+      <actions>
+        <action>Compile all commits on the feature branch</action>
+        <action>Review the full diff against main</action>
+        <action>Draft the PR using the template below</action>
+      </actions>
+
+      <requires-behavior name="pr-template" />
+
+      <status-message>executing PR/PREPARE on {ticket-id} with pr drafter agent</status-message>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="2">
+      <actor>Orchestrator presents the draft PR to the human</actor>
+
+      <gate>BLOCKED — Do not proceed. Human approval required before continuing.</gate>
+      <note>Human may edit the title, body, or testing plan before approving.</note>
+      <status-message>awaiting PR/HUMAN_GATE on {ticket-id} — BLOCKED: human approval required</status-message>
+    </phase>
+
+    <phase name="SUBMIT" order="3">
+      <actor>Orchestrator launches a Submitter agent (light tier)</actor>
+
+      <actions>
+        <action>Push the feature branch to remote</action>
+        <action>Create the PR via "gh pr create"</action>
+        <action>
+          Close the beads ticket with a close_reason summarizing what was done.
+          TRUNK_BASED: close the single ticket.
+          FEATURE_BRANCHING: close the epic ticket (all child tickets should already be
+          closed during their individual workflow cycles). If any children are still open,
+          flag this to the orchestrator before closing.
+        </action>
+        <action>
+          After closing the ticket, ensure the beads changes (.beads/ files) are committed
+          on the feature branch before the PR merges. The ticket closure will reach the
+          default branch via the PR merge, and the GitHub Action will close the GitHub Issue
+          at that point. No separate sync protocol is needed.
+        </action>
+        <action>Report the PR URL back to the orchestrator</action>
+      </actions>
+
+      <status-message>executing PR/SUBMIT on {ticket-id} with submitter agent</status-message>
+    </phase>
+
+    <phase name="HANDOFF" order="4">
+      <description>Ticket complete. PR created and ticket closed. Report PR URL to human.</description>
+      <status-message>executing PR/HANDOFF on {ticket-id} — workflow complete</status-message>
+    </phase>
+
+  </loop>
+
+</lifecycle>
