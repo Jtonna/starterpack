@@ -61,6 +61,7 @@ $Manifest = @(
     ".github/scripts/beads-sync.sh"
     ".beads/.gitignore"
     ".claude/settings.local.json"
+    ".starterpack/hooks/post-merge"
 )
 
 function Get-AuthHeaders {
@@ -232,7 +233,18 @@ try {
         Write-Host "  [ok] .claude/settings.local.json (created: Agent Teams enabled)" -ForegroundColor Green
     }
 
-    # Step 8: Post-install checks
+    # Step 8: Install git hooks
+    $hooksSourceDir = Join-Path $PWD ".starterpack" "hooks"
+    $gitHooksDir = Join-Path $PWD ".git" "hooks"
+    if ((Test-Path $hooksSourceDir) -and (Test-Path (Join-Path $PWD ".git"))) {
+        foreach ($hookFile in (Get-ChildItem -Path $hooksSourceDir -File -ErrorAction SilentlyContinue)) {
+            $destHook = Join-Path $gitHooksDir $hookFile.Name
+            Copy-Item -Path $hookFile.FullName -Destination $destHook -Force
+            Write-Host "  [ok] .git/hooks/$($hookFile.Name) (installed from .starterpack/hooks/)" -ForegroundColor Green
+        }
+    }
+
+    # Step 9: Post-install checks
     Write-Host ""
     Write-Host "Installed starterpack $resolvedVersion ($copied files)" -ForegroundColor Green
     if ($skipped -gt 0) {
