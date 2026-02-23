@@ -21,6 +21,7 @@ A GitHub Actions workflow (`.github/workflows/beads-sync.yml`) triggers on every
 | `.github/scripts/beads-sync.sh` | Sync logic script |
 | `.beads/github-map.json` | Maps beads IDs → GitHub issue numbers (auto-generated) |
 | `.beads/comment-map.json` | Tracks which comments have been synced (auto-generated) |
+| `.starterpack/hooks/post-merge` | Enhanced post-merge hook with auto-commit (source, deployed to .git/hooks/) |
 
 ## Trigger Conditions
 
@@ -44,6 +45,17 @@ Syncs everything **except actual issue closure**. When an issue has status `clos
 3. The GitHub Issue remains **open** until the branch merges to the default branch
 
 Map files are **not** committed back on feature branches to avoid cross-branch divergence. The existing deduplication safety net (title search fallback) handles stale maps.
+
+## Post-Merge Auto-Commit
+
+The starterpack includes an enhanced post-merge git hook (`.starterpack/hooks/post-merge`) that is installed to `.git/hooks/post-merge` by the installer. This hook:
+
+1. Imports updated beads issues after `git pull` or merge (standard beads behavior)
+2. **Auto-commits** any `.beads/` file changes that result from the import
+
+This prevents orphaned `.beads/issues.jsonl` changes that would otherwise accumulate after pulling merged PRs. The auto-commit uses the message `"chore: sync beads after merge [skip ci]"` and only stages `.beads/` files.
+
+The `[skip ci]` tag prevents the GitHub Action from triggering on these housekeeping commits.
 
 ## Label Mapping
 
