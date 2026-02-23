@@ -125,8 +125,10 @@
     <phase name="HANDOFF" order="6">
       <description>
         TRUNK_BASED: proceed to the DOCS workflow.
-        FEATURE_BRANCHING: close the child ticket, then run the beads-sync-protocol
-        (see WORKFLOW_ENTRY.xml) to push the ticket close to main. Return to the orchestrator.
+        FEATURE_BRANCHING: close the child ticket. The beads changes (including the closure)
+        are committed on the epic branch and synced to GitHub Issues automatically by the
+        CI workflow. The GitHub Issue will be marked "pending-close" until the epic branch
+        merges to the default branch. Return to the orchestrator.
         The orchestrator picks the next ready child ticket, or proceeds to DOCS if all children are complete.
       </description>
       <status-message>executing IMPLEMENTATION/HANDOFF on {ticket-id} — transitioning to DOCS</status-message>
