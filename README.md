@@ -21,7 +21,7 @@ Starterpack gives Claude Code a structured workflow with human checkpoints, tier
 - **Tiered models** -Opus plans and reviews, Sonnet/Haiku implement. Cheaper models escalate to Opus automatically when they get stuck
 - **Doc audits every time** -every ticket triggers a documentation review, not just when someone remembers
 - **Git-tracked tickets** -[Beads](https://github.com/cosmix/beads) issues live in your repo, sync to GitHub Issues, and tie directly to branches and commits
-- **Swarm management** -a dedicated swarm manager handles parallel agent dispatch and failure recovery so the main orchestrator stays clean
+- **Team-based implementation** -the orchestrator spawns parallel implementation teammates and manages failure recovery. Technical failures escalate to an Opus agent; requirements issues escalate to you
 
 ## How It Works
 
@@ -33,7 +33,7 @@ PLANNING → IMPLEMENTATION → DOCUMENTATION → PULL REQUEST
 
 **Planning** -Explorer reads your codebase and docs (code is source of truth). Planner breaks the ticket into sub-tasks with complexity ratings. Reviewer checks the plan. You approve before anything gets written.
 
-**Implementation** -Swarm manager dispatches worker agents in parallel. Workers that fail stop and report back. An escalation agent (Opus) takes a crack at the fix. If that fails too, you get asked.
+**Implementation** -The orchestrator spawns implementation teammates in parallel using Agent Teams. Teammates that fail stop and report back. Technical failures (logic bugs, command errors) escalate to an Opus teammate for resolution. Requirements issues (impossible plan, unclear spec) escalate to you for clarification.
 
 **Documentation** -Scout diffs the changes against existing docs. If updates are needed, auditors review each doc file and report findings. You pick which ones to apply.
 

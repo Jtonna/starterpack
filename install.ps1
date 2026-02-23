@@ -60,6 +60,7 @@ $Manifest = @(
     ".github/workflows/beads-sync.yml"
     ".github/scripts/beads-sync.sh"
     ".beads/.gitignore"
+    ".claude/settings.local.json"
 )
 
 function Get-AuthHeaders {
@@ -191,7 +192,47 @@ try {
     Set-Content -Path $VersionFile -Value $resolvedVersion -NoNewline
     Write-Host "  [ok] $VersionFile" -ForegroundColor Green
 
-    # Step 7: Post-install checks
+    # Step 7: Ensure Agent Teams is enabled
+    $settingsPath = Join-Path $PWD ".claude" "settings.local.json"
+    $settingsDir = Split-Path $settingsPath -Parent
+    if (-not (Test-Path $settingsDir)) {
+        New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null
+    }
+    if (Test-Path $settingsPath) {
+        # Merge: read existing, ensure env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS is set
+        try {
+            $existingSettings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+            $needsUpdate = $false
+            if (-not $existingSettings.env) {
+                $existingSettings | Add-Member -NotePropertyName "env" -NotePropertyValue ([PSCustomObject]@{}) -Force
+                $needsUpdate = $true
+            }
+            if ($existingSettings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS -ne "1") {
+                $existingSettings.env | Add-Member -NotePropertyName "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" -NotePropertyValue "1" -Force
+                $needsUpdate = $true
+            }
+            if ($needsUpdate) {
+                $existingSettings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+                Write-Host "  [ok] .claude/settings.local.json (updated: Agent Teams enabled)" -ForegroundColor Green
+            } else {
+                Write-Host "  [ok] .claude/settings.local.json (Agent Teams already enabled)" -ForegroundColor Green
+            }
+        }
+        catch {
+            Write-Host "  [warn] Could not parse .claude/settings.local.json — skipping Agent Teams config" -ForegroundColor Yellow
+        }
+    }
+    else {
+        $settings = [PSCustomObject]@{
+            env = [PSCustomObject]@{
+                CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"
+            }
+        }
+        $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+        Write-Host "  [ok] .claude/settings.local.json (created: Agent Teams enabled)" -ForegroundColor Green
+    }
+
+    # Step 8: Post-install checks
     Write-Host ""
     Write-Host "Installed starterpack $resolvedVersion ($copied files)" -ForegroundColor Green
     if ($skipped -gt 0) {

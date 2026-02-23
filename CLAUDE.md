@@ -10,6 +10,15 @@
 
 ---
 
+<prerequisites>
+  <requirement name="agent-teams">
+    Agent Teams must be enabled. Add to your Claude Code settings (global or project):
+    { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+    The install script provisions this automatically in .claude/settings.local.json.
+    Without Agent Teams, the IMPLEMENTATION workflow cannot dispatch parallel teammates.
+  </requirement>
+</prerequisites>
+
 <runtime>
 
   <role>
@@ -20,7 +29,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     1. Route incoming work through the ENTRY workflow (see docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml)
     2. Ensure every change is tied to a beads ticket — no exceptions
     3. Launch the appropriate workflow (see docs/.starter_pack_docs/workflows/ directory)
-    4. Coordinate sub-agents through the workflow phases
+    4. Coordinate sub-agents and implementation teams through the workflow phases
     5. Interface with the human at validation gates
     6. Report status at every phase transition
     7. Push back on out-of-scope requests — offer to create a new ticket instead
@@ -42,7 +51,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     <file path="docs/.starter_pack_docs/workflows/MODELS.xml">Model tiers, role assignments, escalation rules, dispatch overrides</file>
     <file path="docs/.starter_pack_docs/workflows/BEADS.xml">Issue tracker setup, prefix management, issue types, branch prefixes</file>
     <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">Planning loop: intake → draft → review → human gate → handoff</file>
-    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">Implementation loop: swarm manager → dispatch → monitor → escalate → human gate</file>
+    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">Implementation loop: team dispatch → monitor → escalate → human gate</file>
     <file path="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">Documentation audit loop: scout → audit → human gate → apply</file>
     <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PR.xml">Pull request loop: prepare → human gate → submit</file>
   </configuration>
@@ -52,19 +61,26 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       The orchestrator never does work directly. It launches agents in this hierarchy.
       See docs/.starter_pack_docs/workflows/MODELS.xml for model tier assignments and escalation rules.
 
-      Orchestrator (reasoning) — human interface, workflow coordinator
-        ├── Explorer (reasoning) — codebase + docs exploration, code is source of truth
-        ├── Planner (reasoning) — drafts implementation plan with complexity ratings
-        ├── Plan Reviewer (reasoning) — reviews plan, raises questions
-        ├── Swarm Manager (reasoning) — manages implementation batch, creates branch
-        │     ├── Implementation Agent (worker/light/reasoning per complexity) — writes code
-        │     └── Escalation Agent (reasoning) — launched on implementation failure
-        │           └── if still stuck → orchestrator → human
-        ├── Doc Scout (reasoning) — triages documentation changes needed
-        ├── Doc Auditor (reasoning) — deep per-file documentation audit
-        ├── Doc Writer (worker) — applies approved documentation updates
-        ├── PR Drafter (reasoning) — drafts pull request
-        └── Submitter (light) — pushes branch, creates PR, closes ticket
+      IMPORTANT: Sub-agents (Task tool) cannot spawn other sub-agents. The implementation
+      phase uses Agent Teams to achieve parallel dispatch — the orchestrator acts as team
+      lead and spawns implementation teammates directly.
+
+      Orchestrator / Team Lead (reasoning) — human interface, workflow coordinator
+        │
+        ├── [Sub-agents — Task tool, single-level, isolated context]
+        │     ├── Explorer (reasoning) — codebase + docs exploration, code is source of truth
+        │     ├── Planner (reasoning) — drafts implementation plan with complexity ratings
+        │     ├── Plan Reviewer (reasoning) — reviews plan, raises questions
+        │     ├── Doc Scout (reasoning) — triages documentation changes needed
+        │     ├── Doc Auditor (reasoning) — deep per-file documentation audit
+        │     ├── Doc Writer (worker) — applies approved documentation updates
+        │     ├── PR Drafter (reasoning) — drafts pull request
+        │     └── Submitter (light) — pushes branch, creates PR, closes ticket
+        │
+        └── [Agent Team — IMPLEMENTATION phase only]
+              ├── Teammate: Implementer (worker/light/reasoning per complexity)
+              ├── Teammate: Escalation Agent (reasoning) — spawned on technical failures
+              └── (requirements failures escalate to human)
     -->
   </agent-hierarchy>
 
@@ -131,13 +147,13 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     </step>
 
     <step order="2" workflow="IMPLEMENTATION" file="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">
-      Launch swarm manager → Create branch → Dispatch agents → Monitor → Escalate failures → Human gate.
+      Create branch → Spawn implementation team → Monitor teammates → Escalate failures → Human gate.
       Output: All code changes committed on feature branch.
     </step>
 
     <step order="3" workflow="DOCS" file="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">
       Launch scout → If no changes needed, skip to PR. If trivial, apply directly → Human gate.
-      If substantive, launch audit swarm → Human gate → Apply.
+      If substantive, launch doc auditors → Human gate → Apply.
       Output: Documentation updated to match codebase (or confirmed consistent).
     </step>
 
@@ -180,7 +196,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       <rule>Never commit directly to main</rule>
       <rule>All commits happen on the feature/epic branch</rule>
       <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see docs/.starter_pack_docs/workflows/BEADS.xml issue-types)</rule>
-      <rule>The swarm manager creates the branch during IMPLEMENTATION/LAUNCH (or reuses the epic branch)</rule>
+      <rule>The orchestrator (team lead) creates the branch during IMPLEMENTATION/LAUNCH (or reuses the epic branch)</rule>
     </rules>
 
     <examples>

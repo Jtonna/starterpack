@@ -10,7 +10,7 @@
 
   <tiers>
     <tier name="reasoning" model="opus">
-      Planning, review, debugging, escalation, swarm management.
+      Planning, review, debugging, escalation, team coordination.
     </tier>
     <tier name="worker" model="sonnet">
       Standard implementation tasks.
@@ -23,7 +23,9 @@
   <roles>
     <role name="orchestrator" tier="reasoning" escalates-to="none">
       Never writes code, documentation, or runs commands. Human interface and workflow
-      coordinator only. Launches agents and manages workflow progression.
+      coordinator only. Launches sub-agents and manages workflow progression.
+      During IMPLEMENTATION, acts as Agent Team lead: creates branches, spawns
+      implementation teammates, monitors progress, and handles escalation directly.
     </role>
     <role name="explorer" tier="reasoning" escalates-to="none">
       Explores codebase and project documentation to build context for planning.
@@ -38,20 +40,12 @@
     <role name="plan-reviewer" tier="reasoning" escalates-to="none">
       Reviews plans, raises questions to human via orchestrator.
     </role>
-    <role name="swarm-manager" tier="reasoning" escalates-to="none">
-      Manages implementation agents, handles retries, escalation, and branch creation.
-    </role>
     <role name="implementer" tier="worker" escalates-to="reasoning">
       Writes code. Escalates on failure after 1 retry. See escalation-rules for the
       full failure protocol that must be included in agent instructions.
     </role>
     <role name="light-implementer" tier="light" escalates-to="worker,reasoning">
       Boilerplate, renames, simple edits. Escalates on any failure.
-    </role>
-    <role name="escalation-agent" tier="reasoning" escalates-to="none">
-      Launched by the swarm manager when an implementation agent fails.
-      Receives failure context and attempts to resolve the issue.
-      If unable to resolve, escalates to orchestrator for human guidance.
     </role>
     <role name="doc-scout" tier="reasoning" escalates-to="none">
       Reviews git changes against existing documentation to determine if updates are needed.
@@ -64,8 +58,7 @@
     </role>
     <role name="doc-writer" tier="worker" escalates-to="orchestrator">
       Applies approved documentation updates. Only modifies documentation files.
-      Operates in the DOCS workflow with no swarm manager — failures escalate
-      directly to the orchestrator.
+      Operates in the DOCS workflow — failures escalate directly to the orchestrator.
     </role>
     <role name="pr-drafter" tier="reasoning" escalates-to="none">
       Compiles commits and diffs to draft pull request title, summary, changes table,
@@ -74,13 +67,13 @@
     <role name="submitter" tier="light" escalates-to="orchestrator">
       Performs administrative git and GitHub operations: push branches, create PRs via gh,
       close beads tickets. No code or documentation changes. Operates in the PR workflow
-      with no swarm manager — failures escalate directly to the orchestrator.
+      — failures escalate directly to the orchestrator.
     </role>
   </roles>
 
   <dispatch-override>
     The planner assigns a complexity rating to each sub-task during the PLANNING workflow.
-    The swarm manager uses this rating to override the default implementer tier at dispatch:
+    The orchestrator (team lead) uses this rating to select the model tier for each implementation teammate at dispatch:
 
     <complexity rating="light" dispatches-at="light">
       Haiku. Boilerplate, renames, simple mechanical edits.
@@ -106,15 +99,16 @@
 
     <section name="implementation-agents">
       <description>
-        For worker and light tier agents (implementer, light-implementer) operating under
-        a swarm manager. This protocol MUST be included in every worker agent's instructions.
+        For worker and light tier agents (implementer, light-implementer) operating as Agent Team
+        teammates under the orchestrator (team lead). This protocol MUST be included in every
+        teammate's instructions.
       </description>
       <rule order="1">
         If you encounter an error, retry once with a different approach.
       </rule>
       <rule order="2">
         If the retry fails, stop immediately. Commit any partial work that is valid.
-        Return a structured failure report to the swarm manager:
+        Return a structured failure report to the orchestrator (team lead):
           FAILURE REPORT
           Sub-task: {description}
           Attempted: {what was tried}
@@ -124,26 +118,29 @@
           Suggested fix: {if any}
       </rule>
       <rule order="3">
-        The swarm manager launches an escalation agent (reasoning tier) with
-        your failure context. You do not need to handle this — just report and stop.
+        The orchestrator (team lead) classifies your failure:
+        - Technical failures (logic bugs, command errors, test failures): an Opus (reasoning tier)
+          teammate is spawned with your failure context to attempt resolution.
+        - Requirements failures (impossible plan, unclear spec, wrong direction): the human is
+          asked for clarification or course correction.
+        You do not need to handle this — just report and stop.
       </rule>
       <rule order="4">
-        If the escalation agent also fails, the swarm manager escalates to the
-        orchestrator which presents the issue to the human for guidance.
+        If the Opus escalation teammate also fails on a technical issue, the orchestrator
+        presents the problem to the human for guidance.
       </rule>
     </section>
 
     <section name="doc-workflow-agents">
       <description>
-        For doc-writer agents operating in the DOCS workflow. There is no swarm manager
-        in the DOCS workflow — doc-writers report directly to the orchestrator.
+        For doc-writer agents operating in the DOCS workflow. Doc-writers report directly to the orchestrator.
       </description>
       <rule order="1">
         If you encounter an error, retry once with a different approach.
       </rule>
       <rule order="2">
         If the retry fails, stop immediately. Return a structured failure report
-        directly to the orchestrator (not a swarm manager).
+        directly to the orchestrator.
       </rule>
       <rule order="3">
         The orchestrator presents the failure to the human for guidance.
@@ -152,8 +149,7 @@
 
     <section name="admin-agents">
       <description>
-        For the submitter agent operating in the PR workflow. There is no swarm manager
-        in the PR workflow — the submitter reports directly to the orchestrator.
+        For the submitter agent operating in the PR workflow. The submitter reports directly to the orchestrator.
       </description>
       <rule order="1">
         If a git or GitHub operation fails (e.g. push rejected, gh pr create fails),
@@ -183,5 +179,20 @@
     For example, a budget-conscious project might set implementer to light tier with
     escalation to worker then reasoning.
   </overrides>
+
+  <agent-teams>
+    <!--
+      The IMPLEMENTATION workflow uses Claude Code Agent Teams (experimental).
+      This feature MUST be enabled in the project's Claude Code settings:
+        { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+
+      Key constraints:
+      - Sub-agents (Task tool) cannot spawn other sub-agents
+      - Only the team lead (orchestrator) can spawn teammates
+      - Teammates cannot spawn their own teams or sub-agents
+      - The implementation phase is the ONLY workflow that uses Agent Teams
+      - All other phases (planning, docs, PR) use standard sub-agents via the Task tool
+    -->
+  </agent-teams>
 
 </models>
