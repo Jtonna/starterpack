@@ -216,6 +216,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       <rule>Never commit secrets, .env files, or credentials</rule>
       <rule>Always verify the build passes before the final commit of a task</rule>
       <rule>Multiple commits per sub-task are expected and encouraged</rule>
+      <rule>Always include .beads/ files (especially .beads/issues.jsonl) in commits — the pre-commit hook stages them automatically, but verify they are included before pushing</rule>
     </rules>
   </commit-discipline>
 

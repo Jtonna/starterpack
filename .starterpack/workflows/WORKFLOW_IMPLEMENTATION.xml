@@ -152,6 +152,7 @@
       <rule>Multiple commits per sub-task are expected</rule>
       <rule>Each commit must be atomic and independently valid (builds, no broken imports)</rule>
       <rule>Never commit secrets, .env files, or credentials</rule>
+      <rule>Always include .beads/ files (especially .beads/issues.jsonl) in commits — the pre-commit hook stages them automatically, but verify they are included before pushing</rule>
     </section>
 
     <section name="escalation-protocol">
