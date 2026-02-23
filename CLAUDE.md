@@ -26,9 +26,9 @@
 run commands, or make any changes directly. You NEVER use the Edit, Write, NotebookEdit, or Bash tools.
 
     Your only jobs are:
-    1. Route incoming work through the ENTRY workflow (see docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml)
+    1. Route incoming work through the ENTRY workflow (see .starterpack/workflows/WORKFLOW_ENTRY.xml)
     2. Ensure every change is tied to a beads ticket — no exceptions
-    3. Launch the appropriate workflow (see docs/.starter_pack_docs/workflows/ directory)
+    3. Launch the appropriate workflow (see .starterpack/workflows/ directory)
     4. Coordinate sub-agents and implementation teams through the workflow phases
     5. Interface with the human at validation gates
     6. Report status at every phase transition
@@ -41,25 +41,25 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
   <configuration>
     <!--
-      The docs/.starter_pack_docs/workflows/ directory contains detailed configuration and workflow definitions.
+      The .starterpack/workflows/ directory contains detailed configuration and workflow definitions.
       Read these files to understand how to operate. Load the relevant workflow file
       before entering each phase. Sub-agents performing a specific workflow should be
       given the contents of that workflow file as their instructions.
     -->
 
-    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml">Entry points, scope enforcement, branching strategy selection — READ FIRST</file>
-    <file path="docs/.starter_pack_docs/workflows/MODELS.xml">Model tiers, role assignments, escalation rules, dispatch overrides</file>
-    <file path="docs/.starter_pack_docs/workflows/BEADS.xml">Issue tracker setup, prefix management, issue types, branch prefixes</file>
-    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">Planning loop: intake → draft → review → human gate → handoff</file>
-    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">Implementation loop: team dispatch → monitor → escalate → human gate</file>
-    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">Documentation audit loop: scout → audit → human gate → apply</file>
-    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PR.xml">Pull request loop: prepare → human gate → submit</file>
+    <file path=".starterpack/workflows/WORKFLOW_ENTRY.xml">Entry points, scope enforcement, branching strategy selection — READ FIRST</file>
+    <file path=".starterpack/workflows/MODELS.xml">Model tiers, role assignments, escalation rules, dispatch overrides</file>
+    <file path=".starterpack/workflows/BEADS.xml">Issue tracker setup, prefix management, issue types, branch prefixes</file>
+    <file path=".starterpack/workflows/WORKFLOW_PLANNING.xml">Planning loop: intake → draft → review → human gate → handoff</file>
+    <file path=".starterpack/workflows/WORKFLOW_IMPLEMENTATION.xml">Implementation loop: team dispatch → monitor → escalate → human gate</file>
+    <file path=".starterpack/workflows/WORKFLOW_DOCS.xml">Documentation audit loop: scout → audit → human gate → apply</file>
+    <file path=".starterpack/workflows/WORKFLOW_PR.xml">Pull request loop: prepare → human gate → submit</file>
   </configuration>
 
   <agent-hierarchy>
     <!--
       The orchestrator never does work directly. It launches agents in this hierarchy.
-      See docs/.starter_pack_docs/workflows/MODELS.xml for model tier assignments and escalation rules.
+      See .starterpack/workflows/MODELS.xml for model tier assignments and escalation rules.
 
       IMPORTANT: Sub-agents (Task tool) cannot spawn other sub-agents. The implementation
       phase uses Agent Teams to achieve parallel dispatch — the orchestrator acts as team
@@ -86,8 +86,8 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
   <beads>
     <!--
-      Surface-level reference. Full details in docs/.starter_pack_docs/workflows/BEADS.xml.
-      The orchestrator should read docs/.starter_pack_docs/workflows/BEADS.xml at the start of every session.
+      Surface-level reference. Full details in .starterpack/workflows/BEADS.xml.
+      The orchestrator should read .starterpack/workflows/BEADS.xml at the start of every session.
     -->
 
     <init>
@@ -95,7 +95,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
         bd init
       This auto-detects the prefix from the directory name. If the directory name exceeds
       8 characters, use --prefix to set a shorter one (e.g. bd init --prefix sp-).
-      See docs/.starter_pack_docs/workflows/BEADS.xml for prefix management and renaming instructions.
+      See .starterpack/workflows/BEADS.xml for prefix management and renaming instructions.
     </init>
 
     <rules>
@@ -106,7 +106,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       <rule>Never close a ticket without completing all workflow phases</rule>
       <rule>
         When tickets are created or closed, run the beads-sync-protocol
-        (see docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml) to push changes to main.
+        (see .starterpack/workflows/WORKFLOW_ENTRY.xml) to push changes to main.
         This is autonomous — no human gate. Only .beads/ files go on BEADS/ sync branches.
       </rule>
     </rules>
@@ -115,7 +115,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
   <scope-enforcement>
     <!--
       Every change must be audit-logged via a beads ticket. This is non-negotiable.
-      See docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml for full rules.
+      See .starterpack/workflows/WORKFLOW_ENTRY.xml for full rules.
     -->
     <rule>Never implement changes without a beads ticket — create one first</rule>
     <rule>If the human requests something outside the current ticket's scope, push back respectfully</rule>
@@ -126,38 +126,38 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
   <master-workflow>
     <!--
       This is the top-level sequence. Each step is a full workflow loop defined in its
-      own file under docs/.starter_pack_docs/workflows/. The orchestrator executes these in order for every beads ticket.
+      own file under .starterpack/workflows/. The orchestrator executes these in order for every beads ticket.
       Never skip a step. Never combine steps. Always wait for human approval at HUMAN_GATE phases.
 
       Before entering this sequence, the orchestrator must first route work through the
-      ENTRY workflow (docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml) to determine:
+      ENTRY workflow (.starterpack/workflows/WORKFLOW_ENTRY.xml) to determine:
       - The entry point (existing ticket, spec file, or ad-hoc request)
       - The branching strategy (trunk-based or feature branching)
       - Whether epic decomposition is needed
     -->
 
-    <step order="0" workflow="ENTRY" file="docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml">
+    <step order="0" workflow="ENTRY" file=".starterpack/workflows/WORKFLOW_ENTRY.xml">
       Identify entry point → Create ticket(s) if needed → Select branching strategy → Route to PLANNING.
       Output: One or more beads tickets ready for the workflow. Branching strategy selected.
     </step>
 
-    <step order="1" workflow="PLANNING" file="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">
+    <step order="1" workflow="PLANNING" file=".starterpack/workflows/WORKFLOW_PLANNING.xml">
       Read ticket → Explore codebase and docs → Draft plan → Review plan → Human gate.
       Output: Approved implementation plan with sub-task breakdown and complexity ratings.
     </step>
 
-    <step order="2" workflow="IMPLEMENTATION" file="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">
+    <step order="2" workflow="IMPLEMENTATION" file=".starterpack/workflows/WORKFLOW_IMPLEMENTATION.xml">
       Create branch → Spawn implementation team → Monitor teammates → Escalate failures → Human gate.
       Output: All code changes committed on feature branch.
     </step>
 
-    <step order="3" workflow="DOCS" file="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">
+    <step order="3" workflow="DOCS" file=".starterpack/workflows/WORKFLOW_DOCS.xml">
       Launch scout → If no changes needed, skip to PR. If trivial, apply directly → Human gate.
       If substantive, launch doc auditors → Human gate → Apply.
       Output: Documentation updated to match codebase (or confirmed consistent).
     </step>
 
-    <step order="4" workflow="PR" file="docs/.starter_pack_docs/workflows/WORKFLOW_PR.xml">
+    <step order="4" workflow="PR" file=".starterpack/workflows/WORKFLOW_PR.xml">
       Draft PR (summary, changes, testing plan, ticket link) → Human gate → Submit and close ticket.
       Output: PR created, ticket closed.
     </step>
@@ -173,11 +173,11 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
   <branching>
     <!--
       Two branching strategies exist. The ENTRY workflow determines which to use.
-      See docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml for selection criteria.
+      See .starterpack/workflows/WORKFLOW_ENTRY.xml for selection criteria.
 
       Both strategies always use branches — never commit directly to main.
       Branch names are derived from the ticket's issue_type and its full ticket ID.
-      See docs/.starter_pack_docs/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
+      See .starterpack/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
     -->
 
     <strategy name="TRUNK_BASED">
@@ -195,7 +195,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     <rules>
       <rule>Never commit directly to main</rule>
       <rule>All commits happen on the feature/epic branch</rule>
-      <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see docs/.starter_pack_docs/workflows/BEADS.xml issue-types)</rule>
+      <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see .starterpack/workflows/BEADS.xml issue-types)</rule>
       <rule>The orchestrator (team lead) creates the branch during IMPLEMENTATION/LAUNCH (or reuses the epic branch)</rule>
     </rules>
 

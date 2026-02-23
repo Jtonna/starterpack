@@ -83,17 +83,16 @@ The orchestrator (main Claude Code instance) never writes code, never reviews co
 CLAUDE.md                              # Orchestrator runtime - the brain
 install.ps1                            # Install/upgrade script (PowerShell)
 release.ps1                            # Release tagging script (maintainer use)
-docs/
-  .starter_pack_docs/
-    workflows/
-      WORKFLOW_ENTRY.xml               # Entry points, scope enforcement, branching strategy
-      MODELS.xml                       # Model tiers, roles, escalation rules
-      BEADS.xml                        # Issue tracker config, prefix management
-      WORKFLOW_PLANNING.xml            # Planning loop
-      WORKFLOW_IMPLEMENTATION.xml      # Implementation loop
-      WORKFLOW_DOCS.xml                # Documentation audit loop
-      WORKFLOW_PR.xml                  # Pull request loop
-    beads_sync.md                      # How the GitHub Actions sync works
+.starterpack/
+  workflows/
+    WORKFLOW_ENTRY.xml               # Entry points, scope enforcement, branching strategy
+    MODELS.xml                       # Model tiers, roles, escalation rules
+    BEADS.xml                        # Issue tracker config, prefix management
+    WORKFLOW_PLANNING.xml            # Planning loop
+    WORKFLOW_IMPLEMENTATION.xml      # Implementation loop
+    WORKFLOW_DOCS.xml                # Documentation audit loop
+    WORKFLOW_PR.xml                  # Pull request loop
+  beads_sync.md                      # How the GitHub Actions sync works
 .github/
   workflows/beads-sync.yml            # Beads → GitHub Issues sync trigger
   scripts/beads-sync.sh               # Sync script
@@ -104,8 +103,8 @@ docs/
 
 Everything is meant to be tweaked:
 
-- **`docs/.starter_pack_docs/workflows/MODELS.xml`** -Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
-- **`docs/.starter_pack_docs/workflows/BEADS.xml`** -Add custom issue types, change branch prefix mappings.
+- **`.starterpack/workflows/MODELS.xml`** -Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
+- **`.starterpack/workflows/BEADS.xml`** -Add custom issue types, change branch prefix mappings.
 - **Workflow files** -Add or remove phases, adjust human gates, change what gets presented for review.
 
 ## Background
