@@ -1,46 +1,47 @@
 <workflow name="IMPLEMENTATION">
 
   <overview>
-    Executed after a plan is approved in the Planning workflow. The orchestrator launches
-    a Swarm Manager to coordinate implementation agents. The orchestrator does NOT manage
-    individual agents — the swarm manager handles dispatch, monitoring, and escalation.
+    Executed after a plan is approved in the Planning workflow. The orchestrator acts as Agent Team
+    lead, directly spawning implementation teammates and coordinating their work. Sub-agents cannot
+    spawn other sub-agents, so the orchestrator manages the team directly.
   </overview>
 
   <loop>
     <!--
-      LAUNCH → DISPATCH → MONITOR → EVALUATE → REPORT → HUMAN_GATE → HANDOFF
+      LAUNCH → DISPATCH → MONITOR → EVALUATE → HUMAN_GATE → HANDOFF
                   ▲           │
                   │  failure   │
                   └─ ESCALATE ─┘
                        │
-                       │ stuck → orchestrator → human
+                       │ stuck → human
     -->
 
     <phase name="LAUNCH" order="1">
-      <actor>Orchestrator launches a Swarm Manager agent (reasoning tier)</actor>
+      <actor>Orchestrator (acting as Agent Team lead)</actor>
 
       <actions>
-        <action>Pass the approved plan, ticket ID, ticket issue_type, and branching strategy to the swarm manager</action>
+        <action>Read the approved plan, ticket ID, ticket issue_type, and branching strategy</action>
         <action>
           Branch handling depends on the branching strategy (set during ENTRY workflow):
 
-          TRUNK_BASED: The swarm manager creates a new branch before dispatching any agents.
+          TRUNK_BASED: The orchestrator creates a new branch before dispatching any teammates.
           Branch naming: look up the ticket's issue_type in docs/.starter_pack_docs/workflows/BEADS.xml issue-types
           to find the corresponding branch-prefix.
           Example: issue_type "feature" → branch-prefix "FEAT/" → git checkout -b FEAT/sp-0004
 
-          FEATURE_BRANCHING: The swarm manager checks if the epic branch (EPIC/epic-id) exists.
+          FEATURE_BRANCHING: The orchestrator checks if the epic branch (EPIC/epic-id) exists.
           If it does not exist (first child ticket), create it: git checkout -b EPIC/epic-id
           If it already exists (subsequent child tickets), check it out: git checkout EPIC/epic-id
           All child ticket commits go to the same epic branch.
         </action>
+        <action>Create the Agent Team for this implementation cycle</action>
       </actions>
 
-      <status-message>executing IMPLEMENTATION/LAUNCH on {ticket-id} with swarm manager</status-message>
+      <status-message>executing IMPLEMENTATION/LAUNCH on {ticket-id} with team lead</status-message>
     </phase>
 
     <phase name="DISPATCH" order="2">
-      <actor>Swarm Manager</actor>
+      <actor>Orchestrator (Team Lead)</actor>
 
       <actions>
         <action>Read the plan's sub-task list and dependency ordering</action>
@@ -51,10 +52,10 @@
           - standard complexity → sonnet (worker tier)
           - complex complexity → opus (reasoning tier)
         </action>
-        <action>Launch independent sub-tasks in parallel</action>
-        <action>Launch dependent sub-tasks sequentially after their dependencies complete</action>
+        <action>Spawn independent sub-tasks as teammates in parallel, each with its own model tier</action>
+        <action>Spawn dependent sub-tasks as teammates sequentially after their dependencies complete</action>
         <action>
-          Each implementation agent receives:
+          Each implementation teammate receives:
           - The sub-task description, files to modify, acceptance criteria
           - The branch to commit to
           - The ticket ID for commit messages
@@ -62,17 +63,17 @@
         </action>
       </actions>
 
-      <status-message>executing IMPLEMENTATION/DISPATCH on {ticket-id} — launching {N} agents</status-message>
+      <status-message>executing IMPLEMENTATION/DISPATCH on {ticket-id} — launching {N} teammates</status-message>
     </phase>
 
     <phase name="MONITOR" order="3">
-      <actor>Swarm Manager</actor>
+      <actor>Orchestrator (Team Lead)</actor>
 
       <actions>
-        <action>Collect results from each implementation agent as they complete</action>
+        <action>Receive messages from teammates as they complete or encounter issues</action>
         <action>Track: success/failure, files modified, commits made</action>
         <action>
-          For failed agents, collect the structured failure report:
+          For failed teammates, collect the structured failure report:
           - What was attempted
           - The error encountered
           - Files involved
@@ -84,48 +85,35 @@
     </phase>
 
     <phase name="EVALUATE" order="4">
-      <actor>Swarm Manager</actor>
+      <actor>Orchestrator (Team Lead)</actor>
 
-      <on-success>All agents succeeded → proceed to REPORT</on-success>
+      <on-success>All teammates succeeded → proceed to HUMAN_GATE</on-success>
 
       <on-failure>
-        <action>Launch an Escalation Agent (reasoning tier) with the failure context</action>
-        <action>If escalation agent resolves the issue → re-dispatch remaining work (loop to DISPATCH)</action>
-        <action>If escalation agent also fails → escalate to orchestrator for human input</action>
+        <action>Review the failure context and determine if the issue can be resolved</action>
+        <action>If resolvable: send corrective instructions to the teammate or spawn a new teammate → loop to DISPATCH</action>
+        <action>If not resolvable: present the failure to the human for guidance</action>
       </on-failure>
 
       <status-message>executing IMPLEMENTATION/EVALUATE on {ticket-id} — {N} failures, escalating</status-message>
     </phase>
 
-    <phase name="REPORT" order="5">
-      <actor>Swarm Manager reports back to Orchestrator</actor>
-
-      <report-contents>
-        <item>Summary of all changes made</item>
-        <item>Files modified per sub-task</item>
-        <item>All commit hashes</item>
-        <item>Any warnings or concerns noted during implementation</item>
-      </report-contents>
-
-      <status-message>executing IMPLEMENTATION/REPORT on {ticket-id} — swarm complete</status-message>
-    </phase>
-
-    <phase name="HUMAN_GATE" order="6">
-      <actor>Orchestrator presents to the human</actor>
+    <phase name="HUMAN_GATE" order="5">
+      <actor>Orchestrator (Team Lead) presents to the human</actor>
 
       <presents>
         <item>Summary of what was implemented</item>
         <item>Files modified</item>
         <item>How to verify/test the changes</item>
-        <item>Any concerns raised by the swarm manager</item>
+        <item>Any concerns raised during implementation</item>
       </presents>
 
       <gate>BLOCKED — Do not proceed. Human approval required before continuing.</gate>
-      <on-rejection>Orchestrator passes feedback to swarm manager → loop to DISPATCH</on-rejection>
+      <on-rejection>Orchestrator passes feedback to teammates or spawns new teammates → loop to DISPATCH</on-rejection>
       <status-message>awaiting IMPLEMENTATION/HUMAN_GATE on {ticket-id} — BLOCKED: human approval required</status-message>
     </phase>
 
-    <phase name="HANDOFF" order="7">
+    <phase name="HANDOFF" order="6">
       <description>
         TRUNK_BASED: proceed to the DOCS workflow.
         FEATURE_BRANCHING: close the child ticket, then run the beads-sync-protocol
@@ -139,8 +127,8 @@
 
   <agent-rules>
     <!--
-      These rules MUST be included in the instructions given to every implementation agent.
-      The swarm manager is responsible for passing these to each agent it dispatches.
+      These rules MUST be included in the instructions given to every implementation teammate.
+      The orchestrator (team lead) is responsible for passing these to each teammate it spawns.
     -->
 
     <section name="commit-discipline">
@@ -164,7 +152,7 @@
       <rule order="2">If the retry fails, stop immediately</rule>
       <rule order="3">Commit any partial work that is valid</rule>
       <rule order="4">
-        Return a structured failure report to the swarm manager:
+        Return a structured failure report to the orchestrator (team lead) via a message:
           FAILURE REPORT
           Sub-task: {description}
           Attempted: {what was tried}
@@ -175,9 +163,9 @@
       </rule>
       <rule order="5">
         What happens next (you do not need to handle this — just report and stop):
-        → The swarm manager launches an Escalation Agent (reasoning tier) with your failure context
-        → If the escalation agent resolves the issue, remaining work is re-dispatched
-        → If the escalation agent also fails, it goes to the orchestrator → human for guidance
+        → The orchestrator (team lead) reviews your failure context
+        → If the issue is resolvable, the orchestrator sends corrective instructions or spawns a new teammate
+        → If still stuck, the orchestrator presents the issue to the human for guidance
       </rule>
     </section>
 
@@ -186,7 +174,7 @@
       <rule>
         If changes to out-of-scope files are needed:
         1. Stop work on the out-of-scope change immediately
-        2. Report back to the swarm manager with what was discovered and why it is needed
+        2. Report back to the orchestrator (team lead) with what was discovered and why it is needed
         3. Do NOT attempt the out-of-scope change — it will be tracked as a separate ticket
       </rule>
       <rule>Do not refactor, improve, or clean up code outside the sub-task scope</rule>
@@ -198,11 +186,11 @@
 
     <section name="sub-task-tracking">
       <!--
-        The swarm manager tracks sub-task progress as comments on the parent beads ticket.
+        The orchestrator (team lead) tracks sub-task progress as comments on the parent beads ticket.
         This provides an audit trail visible in the ticket history.
         See also: WORKFLOW_PLANNING.xml sub-task-tracking for the initial plan posting rule.
       -->
-      <rule>Before dispatching agents, post the sub-task plan as a comment on the ticket: bd comment {ticket-id} "..."</rule>
+      <rule>Before dispatching teammates, post the sub-task plan as a comment on the ticket: bd comment {ticket-id} "..."</rule>
       <rule>As each sub-task completes, post a status update comment: "[sub-task N] DONE: {summary of changes}"</rule>
       <rule>On failure, post: "[sub-task N] FAILED: {error summary} — escalating"</rule>
     </section>
