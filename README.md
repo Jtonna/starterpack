@@ -103,8 +103,8 @@ release.ps1                            # Release tagging script (maintainer use)
 
 Everything is meant to be tweaked:
 
-- **`.starterpack/workflows/MODELS.xml`** -Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
-- **`.starterpack/workflows/BEADS.xml`** -Add custom issue types, change branch prefix mappings.
+- **`.starterpack/config/models.xml`** -Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
+- **`.starterpack/config/beads.xml`** -Add custom issue types, change branch prefix mappings.
 - **Workflow files** -Add or remove phases, adjust human gates, change what gets presented for review.
 
 ## Background
