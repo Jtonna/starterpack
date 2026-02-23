@@ -59,7 +59,7 @@
           - The sub-task description, files to modify, acceptance criteria
           - The branch to commit to
           - The ticket ID for commit messages
-          - The full escalation protocol from .starterpack/config/models.xml escalation-rules/implementation-agents
+          - The relevant behavior files (loaded from .starterpack/behaviors/ per the requires-behaviors block below)
         </action>
       </actions>
 
