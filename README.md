@@ -50,11 +50,14 @@ The orchestrator (main Claude Code instance) never writes code, never reviews co
 
 ## Quick Start
 
-<!-- TODO: Replace with actual install command once sp-08j is complete -->
-
 1. **Install into your project:**
-   ```bash
-   # Installation method TBD -see sp-08j
+   ```powershell
+   irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex
+   ```
+   To install a specific version:
+   ```powershell
+   $env:STARTERPACK_VERSION = "v1.0.0"
+   irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex
    ```
 
 2. **Initialize beads:**
@@ -78,6 +81,8 @@ The orchestrator (main Claude Code instance) never writes code, never reviews co
 
 ```
 CLAUDE.md                              # Orchestrator runtime - the brain
+install.ps1                            # Install/upgrade script (PowerShell)
+release.ps1                            # Release tagging script (maintainer use)
 docs/
   .starter_pack_docs/
     workflows/
