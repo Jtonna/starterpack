@@ -75,6 +75,12 @@
           closed during their individual workflow cycles). If any children are still open,
           flag this to the orchestrator before closing.
         </action>
+        <action>
+          After closing the ticket, run the beads-sync-protocol (see WORKFLOW_ENTRY.xml)
+          to push the ticket close to main. Note: if the PR itself is merging to main,
+          the beads changes will be included in the merge — only run the sync protocol
+          if the ticket close happened after the PR was already merged.
+        </action>
         <action>Report the PR URL back to the orchestrator</action>
       </actions>
 
