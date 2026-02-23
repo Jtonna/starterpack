@@ -137,7 +137,7 @@
       </rule>
       <rule order="2">
         If the retry fails, stop immediately. Return a structured failure report
-        directly to the orchestrator (not a swarm manager).
+        directly to the orchestrator.
       </rule>
       <rule order="3">
         The orchestrator presents the failure to the human for guidance.
