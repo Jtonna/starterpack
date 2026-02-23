@@ -1,0 +1,187 @@
+<models>
+
+  <overview>
+    This file defines which models to use for each agent role. The orchestrator reads this
+    file to determine model assignments. These are defaults — the orchestrator may escalate
+    to a higher-tier model when a lower-tier agent fails or encounters complexity beyond
+    its capability. The planner's complexity rating can also override the default tier at
+    dispatch time (see dispatch-override section).
+  </overview>
+
+  <tiers>
+    <tier name="reasoning" model="opus">
+      Planning, review, debugging, escalation, swarm management.
+    </tier>
+    <tier name="worker" model="sonnet">
+      Standard implementation tasks.
+    </tier>
+    <tier name="light" model="haiku">
+      Simple/mechanical implementation — renames, moves, boilerplate, admin operations.
+    </tier>
+  </tiers>
+
+  <roles>
+    <role name="orchestrator" tier="reasoning" escalates-to="none">
+      Never writes code, documentation, or runs commands. Human interface and workflow
+      coordinator only. Launches agents and manages workflow progression.
+    </role>
+    <role name="explorer" tier="reasoning" escalates-to="none">
+      Explores codebase and project documentation to build context for planning.
+      Reads code AND docs, but treats code as the source of truth — docs may be outdated.
+      When docs contradict code, flags the discrepancy in the context report.
+      Read-only — never writes code or documentation.
+    </role>
+    <role name="planner" tier="reasoning" escalates-to="none">
+      Drafts implementation plans from tickets. Assigns complexity ratings
+      (light / standard / complex) per sub-task that determine model tier at dispatch.
+    </role>
+    <role name="plan-reviewer" tier="reasoning" escalates-to="none">
+      Reviews plans, raises questions to human via orchestrator.
+    </role>
+    <role name="swarm-manager" tier="reasoning" escalates-to="none">
+      Manages implementation agents, handles retries, escalation, and branch creation.
+    </role>
+    <role name="implementer" tier="worker" escalates-to="reasoning">
+      Writes code. Escalates on failure after 1 retry. See escalation-rules for the
+      full failure protocol that must be included in agent instructions.
+    </role>
+    <role name="light-implementer" tier="light" escalates-to="worker,reasoning">
+      Boilerplate, renames, simple edits. Escalates on any failure.
+    </role>
+    <role name="escalation-agent" tier="reasoning" escalates-to="none">
+      Launched by the swarm manager when an implementation agent fails.
+      Receives failure context and attempts to resolve the issue.
+      If unable to resolve, escalates to orchestrator for human guidance.
+    </role>
+    <role name="doc-scout" tier="reasoning" escalates-to="none">
+      Reviews git changes against existing documentation to determine if updates are needed.
+      Triages: no changes, trivial fix, or full audit required.
+      Read-only — never writes code or documentation.
+    </role>
+    <role name="doc-auditor" tier="reasoning" escalates-to="none">
+      Performs deep per-file documentation audit. Produces structured findings with
+      severity ratings and suggested fixes. Read-only — never writes.
+    </role>
+    <role name="doc-writer" tier="worker" escalates-to="orchestrator">
+      Applies approved documentation updates. Only modifies documentation files.
+      Operates in the DOCS workflow with no swarm manager — failures escalate
+      directly to the orchestrator.
+    </role>
+    <role name="pr-drafter" tier="reasoning" escalates-to="none">
+      Compiles commits and diffs to draft pull request title, summary, changes table,
+      and AI suggested testing plan. Read-only — never writes code or documentation.
+    </role>
+    <role name="submitter" tier="light" escalates-to="orchestrator">
+      Performs administrative git and GitHub operations: push branches, create PRs via gh,
+      close beads tickets. No code or documentation changes. Operates in the PR workflow
+      with no swarm manager — failures escalate directly to the orchestrator.
+    </role>
+  </roles>
+
+  <dispatch-override>
+    The planner assigns a complexity rating to each sub-task during the PLANNING workflow.
+    The swarm manager uses this rating to override the default implementer tier at dispatch:
+
+    <complexity rating="light" dispatches-at="light">
+      Haiku. Boilerplate, renames, simple mechanical edits.
+    </complexity>
+    <complexity rating="standard" dispatches-at="worker">
+      Sonnet. Normal implementation work.
+    </complexity>
+    <complexity rating="complex" dispatches-at="reasoning">
+      Opus. Known-complex sub-tasks that would likely fail and escalate anyway.
+    </complexity>
+
+    The escalation path still applies regardless of starting tier. A complex task dispatched
+    at reasoning that fails will escalate to the orchestrator for human guidance.
+  </dispatch-override>
+
+  <escalation-rules>
+    <!--
+      Note: "escalates-to" on roles refers to MODEL-TIER escalation (upgrading to a more
+      capable model). WORKFLOW-LEVEL escalation (reporting to orchestrator/human) is a
+      separate concept — all agents can escalate to the orchestrator regardless of their
+      "escalates-to" setting.
+    -->
+
+    <section name="implementation-agents">
+      <description>
+        For worker and light tier agents (implementer, light-implementer) operating under
+        a swarm manager. This protocol MUST be included in every worker agent's instructions.
+      </description>
+      <rule order="1">
+        If you encounter an error, retry once with a different approach.
+      </rule>
+      <rule order="2">
+        If the retry fails, stop immediately. Commit any partial work that is valid.
+        Return a structured failure report to the swarm manager:
+          FAILURE REPORT
+          Sub-task: {description}
+          Attempted: {what was tried}
+          Error: {the error}
+          Files involved: {list}
+          Partial work committed: yes/no
+          Suggested fix: {if any}
+      </rule>
+      <rule order="3">
+        The swarm manager launches an escalation agent (reasoning tier) with
+        your failure context. You do not need to handle this — just report and stop.
+      </rule>
+      <rule order="4">
+        If the escalation agent also fails, the swarm manager escalates to the
+        orchestrator which presents the issue to the human for guidance.
+      </rule>
+    </section>
+
+    <section name="doc-workflow-agents">
+      <description>
+        For doc-writer agents operating in the DOCS workflow. There is no swarm manager
+        in the DOCS workflow — doc-writers report directly to the orchestrator.
+      </description>
+      <rule order="1">
+        If you encounter an error, retry once with a different approach.
+      </rule>
+      <rule order="2">
+        If the retry fails, stop immediately. Return a structured failure report
+        directly to the orchestrator (not a swarm manager).
+      </rule>
+      <rule order="3">
+        The orchestrator presents the failure to the human for guidance.
+      </rule>
+    </section>
+
+    <section name="admin-agents">
+      <description>
+        For the submitter agent operating in the PR workflow. There is no swarm manager
+        in the PR workflow — the submitter reports directly to the orchestrator.
+      </description>
+      <rule order="1">
+        If a git or GitHub operation fails (e.g. push rejected, gh pr create fails),
+        stop immediately and report the error to the orchestrator.
+      </rule>
+      <rule order="2">
+        The orchestrator presents the failure to the human for guidance.
+      </rule>
+    </section>
+
+    <section name="reasoning-agents">
+      <description>
+        For reasoning tier agents (explorer, planner, plan-reviewer, doc-scout,
+        doc-auditor, pr-drafter). These are already at the highest tier.
+      </description>
+      <rule order="1">
+        If a reasoning-tier agent fails, it reports the failure back to the orchestrator.
+      </rule>
+      <rule order="2">
+        The orchestrator presents the failure to the human for guidance.
+      </rule>
+    </section>
+  </escalation-rules>
+
+  <overrides>
+    To change model assignments for a specific project, edit the roles section above.
+    For example, a budget-conscious project might set implementer to light tier with
+    escalation to worker then reasoning.
+  </overrides>
+
+</models>

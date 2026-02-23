@@ -1,0 +1,135 @@
+<workflow name="DOCS">
+
+  <overview>
+    Executed after implementation is approved. Ensures all documentation stays consistent
+    with the codebase. This workflow always runs — even for small changes.
+  </overview>
+
+  <documentation-structure>
+    <description>
+      All projects using this starterpack follow this documentation model. Documentation
+      should not be extensive — just enough to know how to dig around. Think in services
+      and systems: each major service or system gets its own doc file.
+    </description>
+
+    <single-project>
+      <!--
+        README.md                    — What the project is, links to docs/INDEX.md
+        docs/
+          INDEX.md                   — Index of all documentation files
+          ARCHITECTURE.md            — System/service architecture overview
+          {service-or-system}.md     — One doc per service or system (as needed)
+      -->
+    </single-project>
+
+    <monorepo>
+      <!--
+        README.md                    — Repo overview, links to each project
+        docs/
+          INDEX.md                   — Top-level index
+          {project-name}/
+            INDEX.md                 — Project-specific index
+            ARCHITECTURE.md          — Project-specific architecture
+            {service-or-system}.md   — Project-specific service docs
+      -->
+    </monorepo>
+
+    <principles>
+      <principle>README.md is the entry point and must reference docs/INDEX.md</principle>
+      <principle>INDEX.md always exists and references every other doc file</principle>
+      <principle>ARCHITECTURE.md is always present — gives the structural overview</principle>
+      <principle>Think in services and systems — each gets its own doc</principle>
+      <principle>Not extensive — just enough to navigate and understand the codebase</principle>
+    </principles>
+  </documentation-structure>
+
+  <loop>
+    <!--
+      SCOUT → (NO_CHANGES_NEEDED? → HANDOFF)
+            → (TRIVIAL_CHANGE? → HUMAN_GATE → APPLY → HANDOFF)
+            → (CHANGES_NEEDED? → AUDIT → HUMAN_GATE → APPLY → HANDOFF)
+    -->
+
+    <phase name="SCOUT" order="1">
+      <actor>Orchestrator launches a single Doc Scout agent (reasoning tier)</actor>
+
+      <actions>
+        <action>Review the git diff of all changes made during implementation</action>
+        <action>Read all existing documentation files (README.md, docs/INDEX.md, docs/ARCHITECTURE.md, etc.)</action>
+        <action>Determine if any documentation is now inconsistent, missing, or outdated</action>
+        <action>Check if new services/systems were added that need their own doc file</action>
+        <action>Check if INDEX.md references all doc files</action>
+      </actions>
+
+      <output-options>
+        <option result="NO_CHANGES_NEEDED">
+          Documentation is consistent — skip to HANDOFF.
+        </option>
+        <option result="TRIVIAL_CHANGE">
+          One-line fix identified (e.g. a renamed path). Scout reports the fix back to
+          orchestrator. Orchestrator launches a Doc Writer agent (worker tier) to apply it.
+          Change still goes through HUMAN_GATE — no exceptions.
+        </option>
+        <option result="CHANGES_NEEDED">
+          List of affected doc files and what needs updating — proceed to AUDIT.
+        </option>
+      </output-options>
+
+      <status-message>executing DOCS/SCOUT on {ticket-id} with doc scout agent</status-message>
+    </phase>
+
+    <phase name="AUDIT" order="2" condition="CHANGES_NEEDED">
+      <actor>Orchestrator launches one Doc Auditor agent per affected documentation file (reasoning tier)</actor>
+
+      <agent-receives>
+        <item>The specific doc file to audit</item>
+        <item>The git diff from implementation</item>
+        <item>The codebase context relevant to that doc</item>
+      </agent-receives>
+
+      <agent-produces>
+        <item>File audited</item>
+        <item>Finding description</item>
+        <item>Expected vs actual</item>
+        <item>Severity (low / medium / high)</item>
+        <item>Suggested fix</item>
+      </agent-produces>
+
+      <status-message>executing DOCS/AUDIT on {ticket-id} — auditing {N} doc files</status-message>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="3">
+      <actor>Orchestrator presents findings to the human</actor>
+
+      <presents>
+        <item>Findings grouped by documentation file (or the single trivial fix)</item>
+        <item>Severity levels</item>
+        <item>Suggested fixes</item>
+      </presents>
+
+      <gate>BLOCKED — Do not proceed. Human approval required before continuing.</gate>
+      <note>Human selects which findings to apply. All changes — including trivial ones — require approval.</note>
+      <status-message>awaiting DOCS/HUMAN_GATE on {ticket-id} — BLOCKED: human approval required</status-message>
+    </phase>
+
+    <phase name="APPLY" order="4">
+      <actor>Orchestrator launches Doc Writer agents (worker tier) for approved updates</actor>
+
+      <actions>
+        <action>Update documentation files per approved findings</action>
+        <action>If new doc files are needed, create them following the documentation-structure above</action>
+        <action>Update docs/INDEX.md to reference any new files</action>
+        <action>Commit with ticket ID: "{ticket-id}: update documentation"</action>
+      </actions>
+
+      <status-message>executing DOCS/APPLY on {ticket-id} — updating {N} doc files</status-message>
+    </phase>
+
+    <phase name="HANDOFF" order="5">
+      <description>Proceed to the PR workflow.</description>
+      <status-message>executing DOCS/HANDOFF on {ticket-id} — transitioning to PR</status-message>
+    </phase>
+
+  </loop>
+
+</workflow>

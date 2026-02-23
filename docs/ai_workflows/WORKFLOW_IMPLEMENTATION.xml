@@ -1,0 +1,176 @@
+<workflow name="IMPLEMENTATION">
+
+  <overview>
+    Executed after a plan is approved in the Planning workflow. The orchestrator launches
+    a Swarm Manager to coordinate implementation agents. The orchestrator does NOT manage
+    individual agents — the swarm manager handles dispatch, monitoring, and escalation.
+  </overview>
+
+  <loop>
+    <!--
+      LAUNCH → DISPATCH → MONITOR → EVALUATE → REPORT → HUMAN_GATE → HANDOFF
+                  ▲           │
+                  │  failure   │
+                  └─ ESCALATE ─┘
+                       │
+                       │ stuck → orchestrator → human
+    -->
+
+    <phase name="LAUNCH" order="1">
+      <actor>Orchestrator launches a Swarm Manager agent (reasoning tier)</actor>
+
+      <actions>
+        <action>Pass the approved plan, ticket ID, and ticket issue_type to the swarm manager</action>
+        <action>
+          The swarm manager creates the feature branch before dispatching any agents.
+          Branch naming: look up the ticket's issue_type in docs/ai_workflows/BEADS.xml issue-types
+          to find the corresponding branch-prefix.
+          Example: issue_type "feature" → branch-prefix "FEAT/" → git checkout -b FEAT/sp-0004
+          See docs/ai_workflows/BEADS.xml for the full issue_type to branch prefix mapping.
+        </action>
+      </actions>
+
+      <status-message>executing IMPLEMENTATION/LAUNCH on {ticket-id} with swarm manager</status-message>
+    </phase>
+
+    <phase name="DISPATCH" order="2">
+      <actor>Swarm Manager</actor>
+
+      <actions>
+        <action>Read the plan's sub-task list and dependency ordering</action>
+        <action>
+          For each sub-task, determine the model tier using the planner's complexity rating
+          (see docs/ai_workflows/MODELS.xml dispatch-override section):
+          - light complexity → haiku (light tier)
+          - standard complexity → sonnet (worker tier)
+          - complex complexity → opus (reasoning tier)
+        </action>
+        <action>Launch independent sub-tasks in parallel</action>
+        <action>Launch dependent sub-tasks sequentially after their dependencies complete</action>
+        <action>
+          Each implementation agent receives:
+          - The sub-task description, files to modify, acceptance criteria
+          - The branch to commit to
+          - The ticket ID for commit messages
+          - The full escalation protocol from docs/ai_workflows/MODELS.xml escalation-rules/implementation-agents
+        </action>
+      </actions>
+
+      <status-message>executing IMPLEMENTATION/DISPATCH on {ticket-id} — launching {N} agents</status-message>
+    </phase>
+
+    <phase name="MONITOR" order="3">
+      <actor>Swarm Manager</actor>
+
+      <actions>
+        <action>Collect results from each implementation agent as they complete</action>
+        <action>Track: success/failure, files modified, commits made</action>
+        <action>
+          For failed agents, collect the structured failure report:
+          - What was attempted
+          - The error encountered
+          - Files involved
+          - What was committed (if partial work was saved)
+        </action>
+      </actions>
+
+      <status-message>executing IMPLEMENTATION/MONITOR on {ticket-id} — {N}/{total} complete</status-message>
+    </phase>
+
+    <phase name="EVALUATE" order="4">
+      <actor>Swarm Manager</actor>
+
+      <on-success>All agents succeeded → proceed to REPORT</on-success>
+
+      <on-failure>
+        <action>Launch an Escalation Agent (reasoning tier) with the failure context</action>
+        <action>If escalation agent resolves the issue → re-dispatch remaining work (loop to DISPATCH)</action>
+        <action>If escalation agent also fails → escalate to orchestrator for human input</action>
+      </on-failure>
+
+      <status-message>executing IMPLEMENTATION/EVALUATE on {ticket-id} — {N} failures, escalating</status-message>
+    </phase>
+
+    <phase name="REPORT" order="5">
+      <actor>Swarm Manager reports back to Orchestrator</actor>
+
+      <report-contents>
+        <item>Summary of all changes made</item>
+        <item>Files modified per sub-task</item>
+        <item>All commit hashes</item>
+        <item>Any warnings or concerns noted during implementation</item>
+      </report-contents>
+
+      <status-message>executing IMPLEMENTATION/REPORT on {ticket-id} — swarm complete</status-message>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="6">
+      <actor>Orchestrator presents to the human</actor>
+
+      <presents>
+        <item>Summary of what was implemented</item>
+        <item>Files modified</item>
+        <item>How to verify/test the changes</item>
+        <item>Any concerns raised by the swarm manager</item>
+      </presents>
+
+      <gate>BLOCKED — Do not proceed. Human approval required before continuing.</gate>
+      <on-rejection>Orchestrator passes feedback to swarm manager → loop to DISPATCH</on-rejection>
+      <status-message>awaiting IMPLEMENTATION/HUMAN_GATE on {ticket-id} — BLOCKED: human approval required</status-message>
+    </phase>
+
+    <phase name="HANDOFF" order="7">
+      <description>Once approved, proceed to the DOCS workflow.</description>
+      <status-message>executing IMPLEMENTATION/HANDOFF on {ticket-id} — transitioning to DOCS</status-message>
+    </phase>
+
+  </loop>
+
+  <agent-rules>
+    <!--
+      These rules MUST be included in the instructions given to every implementation agent.
+      The swarm manager is responsible for passing these to each agent it dispatches.
+    -->
+
+    <section name="commit-discipline">
+      <rule>Every commit message starts with the ticket ID (discover prefix from beads, never guess)</rule>
+      <rule>Commits must be granular — one logical change per commit</rule>
+      <rule>Multiple commits per sub-task are expected</rule>
+      <rule>Each commit must be atomic and independently valid (builds, no broken imports)</rule>
+      <rule>Never commit secrets, .env files, or credentials</rule>
+    </section>
+
+    <section name="escalation-protocol">
+      <!--
+        This is the full escalation chain. Workers must understand what happens
+        after they report a failure so they know they are not dying in a void.
+      -->
+      <rule order="1">If you encounter an error, retry once with a different approach</rule>
+      <rule order="2">If the retry fails, stop immediately</rule>
+      <rule order="3">Commit any partial work that is valid</rule>
+      <rule order="4">
+        Return a structured failure report to the swarm manager:
+          FAILURE REPORT
+          Sub-task: {description}
+          Attempted: {what was tried}
+          Error: {the error}
+          Files involved: {list}
+          Partial work committed: yes/no
+          Suggested fix: {if any}
+      </rule>
+      <rule order="5">
+        What happens next (you do not need to handle this — just report and stop):
+        → The swarm manager launches an Escalation Agent (reasoning tier) with your failure context
+        → If the escalation agent resolves the issue, remaining work is re-dispatched
+        → If the escalation agent also fails, it goes to the orchestrator → human for guidance
+      </rule>
+    </section>
+
+    <section name="scope">
+      <rule>Only modify files specified in the sub-task</rule>
+      <rule>If changes to out-of-scope files are needed, stop and report back</rule>
+      <rule>Do not refactor, improve, or clean up code outside the sub-task scope</rule>
+    </section>
+  </agent-rules>
+
+</workflow>
