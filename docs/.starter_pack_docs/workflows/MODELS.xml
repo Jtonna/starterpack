@@ -118,13 +118,16 @@
           Suggested fix: {if any}
       </rule>
       <rule order="3">
-        The orchestrator (team lead) receives your failure report. It may attempt to resolve
-        the issue directly or present it to the human for guidance. You do not need to handle
-        this — just report and stop.
+        The orchestrator (team lead) classifies your failure:
+        - Technical failures (logic bugs, command errors, test failures): an Opus (reasoning tier)
+          teammate is spawned with your failure context to attempt resolution.
+        - Requirements failures (impossible plan, unclear spec, wrong direction): the human is
+          asked for clarification or course correction.
+        You do not need to handle this — just report and stop.
       </rule>
       <rule order="4">
-        If the orchestrator cannot resolve the issue, it presents the problem to the human
-        for guidance.
+        If the Opus escalation teammate also fails on a technical issue, the orchestrator
+        presents the problem to the human for guidance.
       </rule>
     </section>
 

@@ -90,9 +90,18 @@
       <on-success>All teammates succeeded → proceed to HUMAN_GATE</on-success>
 
       <on-failure>
-        <action>Review the failure context and determine if the issue can be resolved</action>
-        <action>If resolvable: send corrective instructions to the teammate or spawn a new teammate → loop to DISPATCH</action>
-        <action>If not resolvable: present the failure to the human for guidance</action>
+        <action>Review the failure context and classify the failure type</action>
+        <action>
+          TECHNICAL FAILURE (logic bug, command error, test failure, syntax issue):
+          Spawn an Opus (reasoning tier) teammate with the failure context to attempt resolution.
+          If the Opus teammate resolves the issue → loop to DISPATCH for remaining work.
+          If the Opus teammate also fails → present to human.
+        </action>
+        <action>
+          REQUIREMENTS FAILURE (plan dictated something impossible, unclear spec, wrong direction,
+          missing information, architectural decision needed):
+          Present the failure to the human for clarification or course correction.
+        </action>
       </on-failure>
 
       <status-message>executing IMPLEMENTATION/EVALUATE on {ticket-id} — {N} failures, escalating</status-message>
@@ -163,9 +172,10 @@
       </rule>
       <rule order="5">
         What happens next (you do not need to handle this — just report and stop):
-        → The orchestrator (team lead) reviews your failure context
-        → If the issue is resolvable, the orchestrator sends corrective instructions or spawns a new teammate
-        → If still stuck, the orchestrator presents the issue to the human for guidance
+        → The orchestrator (team lead) classifies your failure
+        → Technical failures (logic bugs, command errors): an Opus teammate is spawned to attempt resolution
+        → Requirements failures (impossible plan, unclear spec): the human is asked for clarification
+        → If the Opus teammate also fails, the human is asked
       </rule>
     </section>
 

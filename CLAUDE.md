@@ -79,7 +79,8 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
         │
         └── [Agent Team — IMPLEMENTATION phase only]
               ├── Teammate: Implementer (worker/light/reasoning per complexity)
-              └── (lead monitors, handles escalation, or asks human)
+              ├── Teammate: Escalation Agent (reasoning) — spawned on technical failures
+              └── (requirements failures escalate to human)
     -->
   </agent-hierarchy>
 
