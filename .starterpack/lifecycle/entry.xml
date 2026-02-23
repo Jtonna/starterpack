@@ -2,7 +2,7 @@
 
   <overview>
     Defines how work enters the system, how the orchestrator routes it to the correct
-    workflow strategy, and how scope is enforced during execution. Every change to the
+    lifecycle strategy, and how scope is enforced during execution. Every change to the
     codebase must be tied to a beads ticket — no exceptions.
   </overview>
 
@@ -15,7 +15,7 @@
 
     <entry name="EXISTING_TICKET">
       <description>A beads ticket already exists (the human says "work on KAN-29b" or the orchestrator picks one from "bd ready").</description>
-      <action>Run "bd show ID" to read the ticket, then proceed to PLANNING workflow.</action>
+      <action>Run "bd show ID" to read the ticket, then proceed to PLANNING lifecycle.</action>
       <status-message>executing ENTRY/EXISTING_TICKET — loading {ticket-id}</status-message>
     </entry>
 
@@ -41,7 +41,7 @@
         <action>Present the full ticket breakdown to the human for approval before starting any work</action>
         <gate>BLOCKED — Do not proceed. Human approval of the ticket breakdown is required before starting any child ticket work.</gate>
         <action>Once approved, beads changes will be committed on the current branch automatically (the pre-commit hook stages .beads/issues.jsonl). The GitHub Action syncs issues from any branch.</action>
-        <action>Pick the first ready ticket (bd ready) and proceed to PLANNING workflow</action>
+        <action>Pick the first ready ticket (bd ready) and proceed to PLANNING lifecycle</action>
       </actions>
       <status-message>executing ENTRY/SPEC_FILE — decomposing spec into tickets</status-message>
     </entry>
@@ -59,7 +59,7 @@
         </action>
         <action>Confirm the ticket with the human: "Created {ticket-id}: {title}. Proceeding with this."</action>
         <action>Beads changes are committed on the current branch automatically. The GitHub Action syncs issues from any branch.</action>
-        <action>Proceed to PLANNING workflow with the new ticket</action>
+        <action>Proceed to PLANNING lifecycle with the new ticket</action>
       </actions>
       <rule>
         Never implement an ad-hoc request without a ticket. The ticket is the audit trail.

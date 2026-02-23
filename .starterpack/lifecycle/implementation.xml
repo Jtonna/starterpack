@@ -1,7 +1,7 @@
 <lifecycle name="IMPLEMENTATION">
 
   <overview>
-    Executed after a plan is approved in the Planning workflow. The orchestrator acts as Agent Team
+    Executed after a plan is approved in the Planning lifecycle. The orchestrator acts as Agent Team
     lead, directly spawning implementation teammates and coordinating their work. Sub-agents cannot
     spawn other sub-agents, so the orchestrator manages the team directly.
   </overview>
@@ -22,7 +22,7 @@
       <actions>
         <action>Read the approved plan, ticket ID, ticket issue_type, and branching strategy</action>
         <action>
-          Branch handling depends on the branching strategy (set during ENTRY workflow):
+          Branch handling depends on the branching strategy (set during ENTRY lifecycle):
 
           TRUNK_BASED: The orchestrator creates a new branch before dispatching any teammates.
           Branch naming: look up the ticket's issue_type in .starterpack/config/beads.xml issue-types
@@ -124,7 +124,7 @@
 
     <phase name="HANDOFF" order="6">
       <description>
-        TRUNK_BASED: proceed to the DOCS workflow.
+        TRUNK_BASED: proceed to the DOCS lifecycle.
         FEATURE_BRANCHING: close the child ticket. The beads changes (including the closure)
         are committed on the epic branch and synced to GitHub Issues automatically by the
         CI workflow. The GitHub Issue will be marked "pending-close" until the epic branch

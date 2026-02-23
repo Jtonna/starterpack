@@ -46,7 +46,7 @@
           Close the beads ticket with a close_reason summarizing what was done.
           TRUNK_BASED: close the single ticket.
           FEATURE_BRANCHING: close the epic ticket (all child tickets should already be
-          closed during their individual workflow cycles). If any children are still open,
+          closed during their individual lifecycle cycles). If any children are still open,
           flag this to the orchestrator before closing.
         </action>
         <action>
@@ -63,7 +63,7 @@
 
     <phase name="HANDOFF" order="4">
       <description>Ticket complete. PR created and ticket closed. Report PR URL to human.</description>
-      <status-message>executing PR/HANDOFF on {ticket-id} — workflow complete</status-message>
+      <status-message>executing PR/HANDOFF on {ticket-id} — lifecycle complete</status-message>
     </phase>
 
   </loop>

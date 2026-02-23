@@ -38,7 +38,7 @@
 
   <section name="doc-workflow-agents">
     <description>
-      For doc-writer agents operating in the DOCS workflow. Doc-writers report directly to the orchestrator.
+      For doc-writer agents operating in the DOCS lifecycle. Doc-writers report directly to the orchestrator.
     </description>
     <rule order="1">If you encounter an error, retry once with a different approach</rule>
     <rule order="2">If the retry fails, stop immediately. Return a structured failure report directly to the orchestrator.</rule>
@@ -47,7 +47,7 @@
 
   <section name="admin-agents">
     <description>
-      For the submitter agent operating in the PR workflow. The submitter reports directly to the orchestrator.
+      For the submitter agent operating in the PR lifecycle. The submitter reports directly to the orchestrator.
     </description>
     <rule order="1">If a git or GitHub operation fails (e.g. push rejected, gh pr create fails), stop immediately and report the error to the orchestrator.</rule>
     <rule order="2">The orchestrator presents the failure to the human for guidance.</rule>

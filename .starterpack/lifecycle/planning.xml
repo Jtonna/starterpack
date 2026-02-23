@@ -110,7 +110,7 @@
 
     <phase name="HANDOFF" order="5">
       <description>
-        Once approved, the plan is passed to the IMPLEMENTATION workflow.
+        Once approved, the plan is passed to the IMPLEMENTATION lifecycle.
       </description>
       <status-message>executing PLANNING/HANDOFF on {ticket-id} — transitioning to IMPLEMENTATION</status-message>
     </phase>

@@ -2,7 +2,7 @@
 
   <overview>
     Executed after implementation is approved. Ensures all documentation stays consistent
-    with the codebase. This workflow always runs — even for small changes.
+    with the codebase. This lifecycle always runs — even for small changes.
   </overview>
 
   <requires-behavior name="documentation-structure" />
@@ -98,7 +98,7 @@
     </phase>
 
     <phase name="HANDOFF" order="5">
-      <description>Proceed to the PR workflow.</description>
+      <description>Proceed to the PR lifecycle.</description>
       <status-message>executing DOCS/HANDOFF on {ticket-id} — transitioning to PR</status-message>
     </phase>
 

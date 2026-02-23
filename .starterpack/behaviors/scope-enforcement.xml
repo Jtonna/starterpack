@@ -3,7 +3,7 @@
   <description>
     Rules for maintaining scope boundaries. Every change must be tied to a beads ticket.
     Implementation agents must only modify files in their sub-task. The orchestrator enforces
-    scope at the workflow level.
+    scope at the lifecycle level.
   </description>
 
   <applies-to>implementer, light-implementer, orchestrator</applies-to>
@@ -16,7 +16,7 @@
 
     <rule name="PUSH_BACK_ON_SCOPE_CREEP">
       If the human requests a change that falls outside the current ticket's scope during
-      any workflow phase:
+      any lifecycle phase:
       1. Acknowledge the request
       2. Explain that it falls outside the current ticket scope ({ticket-id}: {title})
       3. Offer to create a new ticket to track the requested change

@@ -76,10 +76,9 @@
   </issue-types>
 
   <rules>
-    <rule>Every commit message MUST start with the beads ticket ID</rule>
     <rule>Tickets track dependencies via the "dependencies" field with type "blocks"</rule>
     <rule>A ticket is ready when all its blocking dependencies are closed</rule>
-    <rule>Never close a ticket without completing the full workflow</rule>
+    <rule>Never close a ticket without completing the full lifecycle</rule>
   </rules>
 
 </beads>

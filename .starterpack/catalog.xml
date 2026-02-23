@@ -1,7 +1,7 @@
 <catalog>
 
   <overview>
-    Bootstrap index for the starterpack workflow system. The orchestrator reads this file
+    Bootstrap index for the starterpack lifecycle system. The orchestrator reads this file
     at session start to discover all lifecycle phases, composable behaviors, and configuration.
 
     Architecture (inspired by AGORA):
@@ -27,7 +27,7 @@
               used-by="implementer, light-implementer, doc-writer, submitter" />
     <behavior name="escalation"              file=".starterpack/behaviors/escalation.xml"
               description="Failure protocol: retry, structured report, escalation chain"
-              used-by="implementer, light-implementer, doc-writer, submitter, explorer, planner, plan-reviewer, doc-scout, doc-auditor, pr-drafter" />
+              used-by="orchestrator, implementer, light-implementer, doc-writer, submitter, explorer, planner, plan-reviewer, doc-scout, doc-auditor, pr-drafter" />
     <behavior name="scope-enforcement"       file=".starterpack/behaviors/scope-enforcement.xml"
               description="File scope limits, out-of-scope discovery and reporting protocol"
               used-by="implementer, light-implementer, orchestrator" />

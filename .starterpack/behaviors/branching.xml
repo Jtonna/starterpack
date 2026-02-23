@@ -19,7 +19,7 @@
       - No child tickets or decomposition needed
     </when>
     <flow>
-      One ticket → one branch (TYPE/ticket-id) → full workflow (PLANNING → IMPLEMENTATION → DOCS → PR) → merge → delete branch
+      One ticket → one branch (TYPE/ticket-id) → full lifecycle (PLANNING → IMPLEMENTATION → DOCS → PR) → merge → delete branch
     </flow>
   </strategy>
 

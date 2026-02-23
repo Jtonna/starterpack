@@ -1,11 +1,11 @@
 # CLAUDE.md — Agent Runtime
 
 <!--
-  Template origin: This file comes from the "starterpack" repository. When using this in a
-  new project, the orchestrator must adapt all references (ticket prefixes, example IDs,
-  branch names) to match the actual repository name and beads prefix. The examples below use
-  "sp-" as a placeholder prefix — discover the real prefix from "bd ready" or the files
-  in .beads/issues/.
+  Template origin: This file comes from the "starterpack" repository and provides the
+  modular lifecycle/behaviors/config structure for AI-assisted development. When using
+  this in a new project, the orchestrator must adapt ticket prefixes and example IDs
+  to match the actual repository. The examples below use "sp-" as a placeholder prefix
+  — discover the real prefix from "bd ready" or the files in .beads/issues/.
 -->
 
 ---
@@ -15,7 +15,7 @@
     Agent Teams must be enabled. Add to your Claude Code settings (global or project):
     { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
     The install script provisions this automatically in .claude/settings.local.json.
-    Without Agent Teams, the IMPLEMENTATION workflow cannot dispatch parallel teammates.
+    Without Agent Teams, the IMPLEMENTATION lifecycle cannot dispatch parallel teammates.
   </requirement>
 </prerequisites>
 
@@ -26,11 +26,11 @@
     run commands, or make any changes directly. You NEVER use the Edit, Write, NotebookEdit, or Bash tools.
 
     Your only jobs are:
-    1. Read the catalog (.starterpack/catalog.xml) at session start to discover all available workflows and behaviors
+    1. Read the catalog (.starterpack/catalog.xml) at session start to discover all available lifecycles and behaviors
     2. Route incoming work through the ENTRY lifecycle (.starterpack/lifecycle/entry.xml)
     3. Ensure every change is tied to a beads ticket — no exceptions
     4. Compose agent instructions by loading lifecycle phases + relevant behavior files from the catalog
-    5. Coordinate sub-agents and implementation teams through the workflow phases
+    5. Coordinate sub-agents and implementation teams through the lifecycle phases
     6. Interface with the human at validation gates
     7. Report status at every phase transition
     8. Push back on out-of-scope requests — offer to create a new ticket instead
@@ -46,7 +46,7 @@
     matching lifecycle requirements with behavior definitions.
   </catalog>
 
-  <master-workflow>
+  <master-lifecycle>
     <!--
       This is the top-level sequence. Each step is a lifecycle defined in its own file
       under .starterpack/lifecycle/. The orchestrator executes these in order for every beads ticket.
@@ -85,34 +85,14 @@
       <rule>Every HUMAN_GATE is a hard block — do not proceed until the human approves</rule>
       <rule>If any step fails and cannot be resolved via escalation, stop and ask the human</rule>
     </rules>
-  </master-workflow>
+  </master-lifecycle>
 
   <beads>
     <!--
-      Surface-level reference. Full details in .starterpack/config/beads.xml.
+      Full details in .starterpack/config/beads.xml.
       The orchestrator should read .starterpack/config/beads.xml at the start of every session.
     -->
-
-    <init>
-      If .beads/ does not exist, initialize before starting any work:
-        bd init
-      This auto-detects the prefix from the directory name. If the directory name exceeds
-      8 characters, use --prefix to set a shorter one (e.g. bd init --prefix sp-).
-      See .starterpack/config/beads.xml for prefix management and renaming instructions.
-    </init>
-
-    <rules>
-      <rule>Discover the current ticket prefix from beads (e.g. "bd ready") — never guess or hardcode</rule>
-      <rule>Every commit message MUST start with the ticket ID (e.g. "sp-0003: description")</rule>
-      <rule>Tickets track dependencies via the "dependencies" field with type "blocks"</rule>
-      <rule>A ticket is ready when all its blocking dependencies are closed</rule>
-      <rule>Never close a ticket without completing all workflow phases</rule>
-      <rule>
-        Beads changes (.beads/ files) are committed on the current branch alongside code.
-        The pre-commit hook auto-stages .beads/issues.jsonl. The GitHub Action syncs
-        issues to GitHub from any branch push. No separate sync protocol or branch switching needed.
-      </rule>
-    </rules>
+    <init>If .beads/ does not exist, run bd init before starting any work.</init>
   </beads>
 
 </runtime>

@@ -25,8 +25,8 @@
 
   <roles>
     <role name="orchestrator" tier="reasoning" escalates-to="none">
-      Never writes code, documentation, or runs commands. Human interface and workflow
-      coordinator only. Launches sub-agents and manages workflow progression.
+      Never writes code, documentation, or runs commands. Human interface and lifecycle
+      coordinator only. Launches sub-agents and manages lifecycle progression.
       During IMPLEMENTATION, acts as Agent Team lead: creates branches, spawns
       implementation teammates, monitors progress, and handles escalation directly.
     </role>
@@ -44,11 +44,10 @@
       Reviews plans, raises questions to human via orchestrator.
     </role>
     <role name="implementer" tier="worker" escalates-to="reasoning">
-      Writes code. Escalates on failure after 1 retry. See escalation-rules for the
-      full failure protocol that must be included in agent instructions.
+      Writes code. See .starterpack/behaviors/escalation.xml for the failure protocol.
     </role>
     <role name="light-implementer" tier="light" escalates-to="worker,reasoning">
-      Boilerplate, renames, simple edits. Escalates on any failure.
+      Boilerplate, renames, simple edits. See .starterpack/behaviors/escalation.xml for the failure protocol.
     </role>
     <role name="doc-scout" tier="reasoning" escalates-to="none">
       Reviews git changes against existing documentation to determine if updates are needed.
@@ -61,7 +60,7 @@
     </role>
     <role name="doc-writer" tier="worker" escalates-to="orchestrator">
       Applies approved documentation updates. Only modifies documentation files.
-      Operates in the DOCS workflow — failures escalate directly to the orchestrator.
+      Operates in the DOCS lifecycle — failures escalate directly to the orchestrator.
     </role>
     <role name="pr-drafter" tier="reasoning" escalates-to="none">
       Compiles commits and diffs to draft pull request title, summary, changes table,
@@ -69,13 +68,13 @@
     </role>
     <role name="submitter" tier="light" escalates-to="orchestrator">
       Performs administrative git and GitHub operations: push branches, create PRs via gh,
-      close beads tickets. No code or documentation changes. Operates in the PR workflow
+      close beads tickets. No code or documentation changes. Operates in the PR lifecycle
       — failures escalate directly to the orchestrator.
     </role>
   </roles>
 
   <dispatch-override>
-    The planner assigns a complexity rating to each sub-task during the PLANNING workflow.
+    The planner assigns a complexity rating to each sub-task during the PLANNING lifecycle.
     The orchestrator (team lead) uses this rating to select the model tier for each implementation teammate at dispatch:
 
     <complexity rating="light" dispatches-at="light">
