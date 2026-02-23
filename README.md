@@ -84,14 +84,25 @@ CLAUDE.md                              # Orchestrator runtime - the brain
 install.ps1                            # Install/upgrade script (PowerShell)
 release.ps1                            # Release tagging script (maintainer use)
 .starterpack/
-  workflows/
-    WORKFLOW_ENTRY.xml               # Entry points, scope enforcement, branching strategy
-    MODELS.xml                       # Model tiers, roles, escalation rules
-    BEADS.xml                        # Issue tracker config, prefix management
-    WORKFLOW_PLANNING.xml            # Planning loop
-    WORKFLOW_IMPLEMENTATION.xml      # Implementation loop
-    WORKFLOW_DOCS.xml                # Documentation audit loop
-    WORKFLOW_PR.xml                  # Pull request loop
+  catalog.xml                        # Bootstrap index — lists all lifecycles, behaviors, config
+  lifecycle/                         # WHEN things happen (phase sequences)
+    entry.xml                        #   Entry points, branching strategy selection
+    planning.xml                     #   Planning loop: intake → draft → review → human gate
+    implementation.xml               #   Implementation loop: dispatch → monitor → escalate → human gate
+    docs.xml                         #   Documentation audit loop
+    pr.xml                           #   PR loop: prepare → human gate → submit
+  behaviors/                         # WHAT agents can do (composable, standalone)
+    commit-discipline.xml            #   Commit message format, granularity rules
+    escalation.xml                   #   Failure protocol, escalation chain
+    scope-enforcement.xml            #   File scope limits, out-of-scope reporting
+    sub-task-tracking.xml            #   Sub-task progress as ticket comments
+    documentation-structure.xml      #   Doc model: single-project, monorepo layouts
+    pr-template.xml                  #   PR body template
+    branching.xml                    #   Branch naming, trunk-based vs feature-branching
+  config/                            # Infrastructure configuration
+    models.xml                       #   Model tiers, roles, dispatch overrides
+    beads.xml                        #   Issue tracker config, prefix management
+    agent-teams.xml                  #   Agent Teams prerequisites and constraints
   beads_sync.md                      # How the GitHub Actions sync works
 .github/
   workflows/beads-sync.yml            # Beads → GitHub Issues sync trigger
@@ -105,7 +116,8 @@ Everything is meant to be tweaked:
 
 - **`.starterpack/config/models.xml`** -Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
 - **`.starterpack/config/beads.xml`** -Add custom issue types, change branch prefix mappings.
-- **Workflow files** -Add or remove phases, adjust human gates, change what gets presented for review.
+- **Lifecycle files** — Add or remove phases, adjust human gates, change what gets presented for review.
+- **Behavior files** — Modify agent capabilities independently. Add a new behavior by creating a file + updating the catalog.
 
 ## Background
 
