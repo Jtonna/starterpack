@@ -1,0 +1,49 @@
+<behavior name="scope-enforcement" version="1">
+
+  <description>
+    Rules for maintaining scope boundaries. Every change must be tied to a beads ticket.
+    Implementation agents must only modify files in their sub-task. The orchestrator enforces
+    scope at the workflow level.
+  </description>
+
+  <applies-to>implementer, light-implementer, orchestrator</applies-to>
+
+  <section name="orchestrator-level">
+    <rule name="NO_UNTRACKED_CHANGES">
+      Every change to the codebase must be tied to a beads ticket. No exceptions.
+      This is the audit trail. If a change is not in a ticket, it does not get implemented.
+    </rule>
+
+    <rule name="PUSH_BACK_ON_SCOPE_CREEP">
+      If the human requests a change that falls outside the current ticket's scope during
+      any workflow phase:
+      1. Acknowledge the request
+      2. Explain that it falls outside the current ticket scope ({ticket-id}: {title})
+      3. Offer to create a new ticket to track the requested change
+      4. If the human agrees, create the ticket and continue with the original work
+      5. If the human insists on doing it now, create the ticket first, then pause the current
+         ticket and switch to the new one — the change still gets tracked
+
+      Never silently incorporate out-of-scope changes. The goal is not to block the human
+      but to ensure every change has a ticket for traceability.
+    </rule>
+  </section>
+
+  <section name="agent-level">
+    <rule name="AGENT_SCOPE_ENFORCEMENT">
+      Implementation teammates must only modify files specified in their sub-task.
+      If a teammate discovers that out-of-scope changes are needed:
+      1. Stop work on the out-of-scope change immediately
+      2. Report back to the orchestrator (team lead) with what was discovered and why it is needed
+      3. Do NOT attempt the out-of-scope change — it will be tracked as a separate ticket
+      4. The original sub-task continues without the out-of-scope change
+    </rule>
+
+    <rule>Do not refactor, improve, or clean up code outside the sub-task scope</rule>
+    <rule>
+      Every change must be traceable to the ticket. If you cannot tie a change back to
+      the sub-task description, do not make it.
+    </rule>
+  </section>
+
+</behavior>

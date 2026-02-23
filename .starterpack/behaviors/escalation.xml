@@ -1,0 +1,72 @@
+<behavior name="escalation" version="1">
+
+  <description>
+    Failure protocol for all agent types. Defines what to do when an error is encountered,
+    how to report failures, and what happens in the escalation chain. Each agent category
+    has its own section — agents should read only their applicable section.
+  </description>
+
+  <applies-to>all agents</applies-to>
+
+  <section name="implementation-agents">
+    <description>
+      For worker and light tier agents (implementer, light-implementer) operating as Agent Team
+      teammates under the orchestrator (team lead). This protocol MUST be included in every
+      teammate's instructions.
+    </description>
+    <rule order="1">If you encounter an error, retry once with a different approach</rule>
+    <rule order="2">If the retry fails, stop immediately</rule>
+    <rule order="3">Commit any partial work that is valid</rule>
+    <rule order="4">
+      Return a structured failure report to the orchestrator (team lead) via a message:
+        FAILURE REPORT
+        Sub-task: {description}
+        Attempted: {what was tried}
+        Error: {the error}
+        Files involved: {list}
+        Partial work committed: yes/no
+        Suggested fix: {if any}
+    </rule>
+    <rule order="5">
+      What happens next (you do not need to handle this — just report and stop):
+      → The orchestrator (team lead) classifies your failure
+      → Technical failures (logic bugs, command errors): an Opus teammate is spawned to attempt resolution
+      → Requirements failures (impossible plan, unclear spec): the human is asked for clarification
+      → If the Opus teammate also fails, the human is asked
+    </rule>
+  </section>
+
+  <section name="doc-workflow-agents">
+    <description>
+      For doc-writer agents operating in the DOCS workflow. Doc-writers report directly to the orchestrator.
+    </description>
+    <rule order="1">If you encounter an error, retry once with a different approach</rule>
+    <rule order="2">If the retry fails, stop immediately. Return a structured failure report directly to the orchestrator.</rule>
+    <rule order="3">The orchestrator presents the failure to the human for guidance.</rule>
+  </section>
+
+  <section name="admin-agents">
+    <description>
+      For the submitter agent operating in the PR workflow. The submitter reports directly to the orchestrator.
+    </description>
+    <rule order="1">If a git or GitHub operation fails (e.g. push rejected, gh pr create fails), stop immediately and report the error to the orchestrator.</rule>
+    <rule order="2">The orchestrator presents the failure to the human for guidance.</rule>
+  </section>
+
+  <section name="reasoning-agents">
+    <description>
+      For reasoning tier agents (explorer, planner, plan-reviewer, doc-scout, doc-auditor, pr-drafter).
+      These are already at the highest tier.
+    </description>
+    <rule order="1">If a reasoning-tier agent fails, it reports the failure back to the orchestrator.</rule>
+    <rule order="2">The orchestrator presents the failure to the human for guidance.</rule>
+  </section>
+
+  <escalation-note>
+    "escalates-to" on role definitions in config/models.xml refers to MODEL-TIER escalation
+    (upgrading to a more capable model). WORKFLOW-LEVEL escalation (reporting to orchestrator/human)
+    is a separate concept — all agents can escalate to the orchestrator regardless of their
+    "escalates-to" setting.
+  </escalation-note>
+
+</behavior>
