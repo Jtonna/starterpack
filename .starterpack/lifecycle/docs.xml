@@ -1,47 +1,11 @@
-<workflow name="DOCS">
+<lifecycle name="DOCS">
 
   <overview>
     Executed after implementation is approved. Ensures all documentation stays consistent
-    with the codebase. This workflow always runs — even for small changes.
+    with the codebase. This lifecycle always runs — even for small changes.
   </overview>
 
-  <documentation-structure>
-    <description>
-      All projects using this starterpack follow this documentation model. Documentation
-      should not be extensive — just enough to know how to dig around. Think in services
-      and systems: each major service or system gets its own doc file.
-    </description>
-
-    <single-project>
-      <!--
-        README.md                    — What the project is, links to docs/INDEX.md
-        docs/
-          INDEX.md                   — Index of all documentation files
-          ARCHITECTURE.md            — System/service architecture overview
-          {service-or-system}.md     — One doc per service or system (as needed)
-      -->
-    </single-project>
-
-    <monorepo>
-      <!--
-        README.md                    — Repo overview, links to each project
-        docs/
-          INDEX.md                   — Top-level index
-          {project-name}/
-            INDEX.md                 — Project-specific index
-            ARCHITECTURE.md          — Project-specific architecture
-            {service-or-system}.md   — Project-specific service docs
-      -->
-    </monorepo>
-
-    <principles>
-      <principle>README.md is the entry point and must reference docs/INDEX.md</principle>
-      <principle>INDEX.md always exists and references every other doc file</principle>
-      <principle>ARCHITECTURE.md is always present — gives the structural overview</principle>
-      <principle>Think in services and systems — each gets its own doc</principle>
-      <principle>Not extensive — just enough to navigate and understand the codebase</principle>
-    </principles>
-  </documentation-structure>
+  <requires-behavior name="documentation-structure" />
 
   <loop>
     <!--
@@ -121,7 +85,7 @@
 
       <actions>
         <action>Update documentation files per approved findings</action>
-        <action>If new doc files are needed, create them following the documentation-structure above</action>
+        <action>If new doc files are needed, create them following the documentation-structure behavior</action>
         <action>Update docs/INDEX.md to reference any new files</action>
         <action>
           Commit with ticket ID: "{ticket-id}: update documentation"
@@ -134,10 +98,10 @@
     </phase>
 
     <phase name="HANDOFF" order="5">
-      <description>Proceed to the PR workflow.</description>
+      <description>Proceed to the PR lifecycle.</description>
       <status-message>executing DOCS/HANDOFF on {ticket-id} — transitioning to PR</status-message>
     </phase>
 
   </loop>
 
-</workflow>
+</lifecycle>
