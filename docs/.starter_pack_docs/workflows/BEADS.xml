@@ -58,6 +58,7 @@
     <command name="bd show ID">Show full details of a ticket</command>
     <command name="bd stats">Project statistics and progress</command>
     <command name="bd search QUERY">Search tickets by text</command>
+    <command name="bd comment ID TEXT">Add a comment to a ticket (used for sub-task tracking)</command>
     <command name="bd close ID --reason TEXT">Close a ticket with a reason summary</command>
   </commands>
 

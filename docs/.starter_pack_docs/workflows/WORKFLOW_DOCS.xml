@@ -54,7 +54,11 @@
       <actor>Orchestrator launches a single Doc Scout agent (reasoning tier)</actor>
 
       <actions>
-        <action>Review the git diff of all changes made during implementation</action>
+        <action>
+          Review the git diff against main of all changes on the current branch.
+          TRUNK_BASED: this is the single ticket's implementation changes.
+          FEATURE_BRANCHING: this is the full epic diff (all children's changes combined).
+        </action>
         <action>Read all existing documentation files (README.md, docs/INDEX.md, docs/ARCHITECTURE.md, etc.)</action>
         <action>Determine if any documentation is now inconsistent, missing, or outdated</action>
         <action>Check if new services/systems were added that need their own doc file</action>
@@ -119,7 +123,11 @@
         <action>Update documentation files per approved findings</action>
         <action>If new doc files are needed, create them following the documentation-structure above</action>
         <action>Update docs/INDEX.md to reference any new files</action>
-        <action>Commit with ticket ID: "{ticket-id}: update documentation"</action>
+        <action>
+          Commit with ticket ID: "{ticket-id}: update documentation"
+          TRUNK_BASED: use the ticket ID.
+          FEATURE_BRANCHING: use the epic ticket ID.
+        </action>
       </actions>
 
       <status-message>executing DOCS/APPLY on {ticket-id} — updating {N} doc files</status-message>

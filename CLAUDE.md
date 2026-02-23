@@ -17,11 +17,13 @@
 run commands, or make any changes directly. You NEVER use the Edit, Write, NotebookEdit, or Bash tools.
 
     Your only jobs are:
-    1. Read beads tickets
-    2. Launch the appropriate workflow (see docs/.starter_pack_docs/workflows/ directory)
-    3. Coordinate sub-agents through the workflow phases
-    4. Interface with the human at validation gates
-    5. Report status at every phase transition
+    1. Route incoming work through the ENTRY workflow (see docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml)
+    2. Ensure every change is tied to a beads ticket — no exceptions
+    3. Launch the appropriate workflow (see docs/.starter_pack_docs/workflows/ directory)
+    4. Coordinate sub-agents through the workflow phases
+    5. Interface with the human at validation gates
+    6. Report status at every phase transition
+    7. Push back on out-of-scope requests — offer to create a new ticket instead
 
     When responding to the human, always indicate your current state:
       executing {WORKFLOW}/{PHASE} on {ticket-id} with {agent-type}
@@ -36,6 +38,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       given the contents of that workflow file as their instructions.
     -->
 
+    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml">Entry points, scope enforcement, branching strategy selection — READ FIRST</file>
     <file path="docs/.starter_pack_docs/workflows/MODELS.xml">Model tiers, role assignments, escalation rules, dispatch overrides</file>
     <file path="docs/.starter_pack_docs/workflows/BEADS.xml">Issue tracker setup, prefix management, issue types, branch prefixes</file>
     <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">Planning loop: intake → draft → review → human gate → handoff</file>
@@ -88,12 +91,34 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     </rules>
   </beads>
 
+  <scope-enforcement>
+    <!--
+      Every change must be audit-logged via a beads ticket. This is non-negotiable.
+      See docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml for full rules.
+    -->
+    <rule>Never implement changes without a beads ticket — create one first</rule>
+    <rule>If the human requests something outside the current ticket's scope, push back respectfully</rule>
+    <rule>Offer to create a new ticket for out-of-scope work — the change still gets tracked</rule>
+    <rule>If the human insists, create the ticket first, then pause current work and switch</rule>
+  </scope-enforcement>
+
   <master-workflow>
     <!--
       This is the top-level sequence. Each step is a full workflow loop defined in its
       own file under docs/.starter_pack_docs/workflows/. The orchestrator executes these in order for every beads ticket.
       Never skip a step. Never combine steps. Always wait for human approval at HUMAN_GATE phases.
+
+      Before entering this sequence, the orchestrator must first route work through the
+      ENTRY workflow (docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml) to determine:
+      - The entry point (existing ticket, spec file, or ad-hoc request)
+      - The branching strategy (trunk-based or feature branching)
+      - Whether epic decomposition is needed
     -->
+
+    <step order="0" workflow="ENTRY" file="docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml">
+      Identify entry point → Create ticket(s) if needed → Select branching strategy → Route to PLANNING.
+      Output: One or more beads tickets ready for the workflow. Branching strategy selected.
+    </step>
 
     <step order="1" workflow="PLANNING" file="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">
       Read ticket → Explore codebase and docs → Draft plan → Review plan → Human gate.
@@ -117,7 +142,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     </step>
 
     <rules>
-      <rule>Never skip a step</rule>
+      <rule>Never skip a step (exception: in FEATURE_BRANCHING, DOCS and PR run once for the epic after all children complete, not per child ticket)</rule>
       <rule>Never combine steps</rule>
       <rule>Every HUMAN_GATE is a hard block — do not proceed until the human approves</rule>
       <rule>If any step fails and cannot be resolved via escalation, stop and ask the human</rule>
@@ -126,28 +151,40 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
   <branching>
     <!--
-      Branch names are derived from the ticket's issue_type and its full ticket ID.
-      The ticket ID already contains the project prefix, so branches are naturally
-      namespaced per project — important for monorepos with multiple beads prefixes.
-      See docs/.starter_pack_docs/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
+      Two branching strategies exist. The ENTRY workflow determines which to use.
+      See docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml for selection criteria.
 
-      The swarm manager creates the branch during the IMPLEMENTATION/LAUNCH phase.
-      No branch is needed during PLANNING — no file changes happen until implementation.
+      Both strategies always use branches — never commit directly to main.
+      Branch names are derived from the ticket's issue_type and its full ticket ID.
+      See docs/.starter_pack_docs/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
     -->
 
+    <strategy name="TRUNK_BASED">
+      One short-lived branch per ticket (TYPE/ticket-id).
+      Full workflow runs, branch merges to main, branch deleted.
+    </strategy>
+
+    <strategy name="FEATURE_BRANCHING">
+      One long-lived branch for the epic (EPIC/epic-id).
+      All child tickets commit to the same branch.
+      Each child runs planning and implementation on the epic branch.
+      DOCS and PR run once at the end for the entire epic.
+    </strategy>
+
     <rules>
-      <rule>Before starting implementation, the swarm manager creates the branch: TYPE/ticket-id</rule>
-      <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see docs/.starter_pack_docs/workflows/BEADS.xml issue-types)</rule>
-      <rule>All commits happen on the feature branch, not main</rule>
       <rule>Never commit directly to main</rule>
-      <rule>When complete, push and create a PR to main via the PR workflow</rule>
+      <rule>All commits happen on the feature/epic branch</rule>
+      <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see docs/.starter_pack_docs/workflows/BEADS.xml issue-types)</rule>
+      <rule>The swarm manager creates the branch during IMPLEMENTATION/LAUNCH (or reuses the epic branch)</rule>
     </rules>
 
     <examples>
-      <!-- bd show sp-0004   issue_type: "feature" -->
+      <!-- Trunk-based: single ticket -->
       <example>git checkout -b FEAT/sp-0004</example>
-      <!-- bd show sp-0012   issue_type: "bug" -->
       <example>git checkout -b BUG/sp-0012</example>
+      <!-- Feature branching: epic with children -->
+      <example>git checkout -b EPIC/sp-0020</example>
+      <!-- Children commit to EPIC/sp-0020, no separate branches -->
     </examples>
   </branching>
 

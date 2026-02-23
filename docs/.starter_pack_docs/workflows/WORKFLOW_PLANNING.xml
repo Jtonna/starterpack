@@ -28,7 +28,12 @@
         <action>Read project documentation (README.md, docs/ARCHITECTURE.md, relevant service docs)</action>
         <action>Treat code as the source of truth — flag any discrepancies where docs contradict code</action>
         <action>Identify existing utilities, functions, and conventions to reuse</action>
-        <action>Determine if the ticket needs to be decomposed into sub-tickets first</action>
+        <action>
+          Determine if the ticket needs to be decomposed into sub-tickets first.
+          If the explorer determines the scope is too large for a single planning cycle,
+          report this to the orchestrator. The orchestrator should route back through
+          the ENTRY workflow's SPEC_FILE path for epic decomposition.
+        </action>
       </actions>
 
       <output>Structured context report returned to orchestrator</output>
@@ -54,6 +59,19 @@
       </actions>
 
       <output>Structured implementation plan</output>
+
+      <sub-task-tracking>
+        <!--
+          Sub-tasks are NOT separate beads tickets. They are tracked as comments on the
+          parent ticket. This keeps the ticket list clean while maintaining an audit trail.
+          See also: WORKFLOW_IMPLEMENTATION.xml agent-rules/sub-task-tracking for the
+          swarm manager's update rules during execution.
+        -->
+        <rule>After the plan is approved at HUMAN_GATE, the orchestrator posts the sub-task list as a comment on the ticket</rule>
+        <rule>During implementation, the swarm manager updates the comment (or adds new comments) as sub-tasks complete or fail</rule>
+        <rule>Format: "[sub-task N] DONE|FAILED|IN_PROGRESS: description"</rule>
+      </sub-task-tracking>
+
       <status-message>executing PLANNING/DRAFT on {ticket-id} with planner agent</status-message>
     </phase>
 
