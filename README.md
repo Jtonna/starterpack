@@ -86,6 +86,7 @@ release.ps1                            # Release tagging script (maintainer use)
 docs/
   .starter_pack_docs/
     workflows/
+      WORKFLOW_ENTRY.xml               # Entry points, scope enforcement, branching strategy
       MODELS.xml                       # Model tiers, roles, escalation rules
       BEADS.xml                        # Issue tracker config, prefix management
       WORKFLOW_PLANNING.xml            # Planning loop

@@ -20,13 +20,19 @@
       <actor>Orchestrator launches a Swarm Manager agent (reasoning tier)</actor>
 
       <actions>
-        <action>Pass the approved plan, ticket ID, and ticket issue_type to the swarm manager</action>
+        <action>Pass the approved plan, ticket ID, ticket issue_type, and branching strategy to the swarm manager</action>
         <action>
-          The swarm manager creates the feature branch before dispatching any agents.
+          Branch handling depends on the branching strategy (set during ENTRY workflow):
+
+          TRUNK_BASED: The swarm manager creates a new branch before dispatching any agents.
           Branch naming: look up the ticket's issue_type in docs/.starter_pack_docs/workflows/BEADS.xml issue-types
           to find the corresponding branch-prefix.
           Example: issue_type "feature" → branch-prefix "FEAT/" → git checkout -b FEAT/sp-0004
-          See docs/.starter_pack_docs/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
+
+          FEATURE_BRANCHING: The swarm manager checks if the epic branch (EPIC/epic-id) exists.
+          If it does not exist (first child ticket), create it: git checkout -b EPIC/epic-id
+          If it already exists (subsequent child tickets), check it out: git checkout EPIC/epic-id
+          All child ticket commits go to the same epic branch.
         </action>
       </actions>
 
@@ -120,7 +126,11 @@
     </phase>
 
     <phase name="HANDOFF" order="7">
-      <description>Once approved, proceed to the DOCS workflow.</description>
+      <description>
+        TRUNK_BASED: proceed to the DOCS workflow.
+        FEATURE_BRANCHING: close the child ticket and return to the orchestrator.
+        The orchestrator picks the next ready child ticket, or proceeds to DOCS if all children are complete.
+      </description>
       <status-message>executing IMPLEMENTATION/HANDOFF on {ticket-id} — transitioning to DOCS</status-message>
     </phase>
 
@@ -133,7 +143,11 @@
     -->
 
     <section name="commit-discipline">
-      <rule>Every commit message starts with the ticket ID (discover prefix from beads, never guess)</rule>
+      <rule>
+        Every commit message starts with the ticket ID being worked (discover prefix from beads, never guess).
+        In FEATURE_BRANCHING, use the child ticket ID, not the epic ID. The epic branch name
+        already ties everything together.
+      </rule>
       <rule>Commits must be granular — one logical change per commit</rule>
       <rule>Multiple commits per sub-task are expected</rule>
       <rule>Each commit must be atomic and independently valid (builds, no broken imports)</rule>
@@ -168,8 +182,28 @@
 
     <section name="scope">
       <rule>Only modify files specified in the sub-task</rule>
-      <rule>If changes to out-of-scope files are needed, stop and report back</rule>
+      <rule>
+        If changes to out-of-scope files are needed:
+        1. Stop work on the out-of-scope change immediately
+        2. Report back to the swarm manager with what was discovered and why it is needed
+        3. Do NOT attempt the out-of-scope change — it will be tracked as a separate ticket
+      </rule>
       <rule>Do not refactor, improve, or clean up code outside the sub-task scope</rule>
+      <rule>
+        Every change must be traceable to the ticket. If you cannot tie a change back to
+        the sub-task description, do not make it.
+      </rule>
+    </section>
+
+    <section name="sub-task-tracking">
+      <!--
+        The swarm manager tracks sub-task progress as comments on the parent beads ticket.
+        This provides an audit trail visible in the ticket history.
+        See also: WORKFLOW_PLANNING.xml sub-task-tracking for the initial plan posting rule.
+      -->
+      <rule>Before dispatching agents, post the sub-task plan as a comment on the ticket: bd comment {ticket-id} "..."</rule>
+      <rule>As each sub-task completes, post a status update comment: "[sub-task N] DONE: {summary of changes}"</rule>
+      <rule>On failure, post: "[sub-task N] FAILED: {error summary} — escalating"</rule>
     </section>
   </agent-rules>
 

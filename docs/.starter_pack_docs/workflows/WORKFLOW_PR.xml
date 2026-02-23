@@ -28,7 +28,7 @@
           ## Summary
 
           - {bullet point summary of changes, 1-3 lines}
-          - Resolves {ticket-id}
+          - Resolves {ticket-id} (FEATURE_BRANCHING: list epic ID and all child ticket IDs)
 
           ## Changes
 
@@ -68,7 +68,13 @@
       <actions>
         <action>Push the feature branch to remote</action>
         <action>Create the PR via "gh pr create"</action>
-        <action>Close the beads ticket with a close_reason summarizing what was done</action>
+        <action>
+          Close the beads ticket with a close_reason summarizing what was done.
+          TRUNK_BASED: close the single ticket.
+          FEATURE_BRANCHING: close the epic ticket (all child tickets should already be
+          closed during their individual workflow cycles). If any children are still open,
+          flag this to the orchestrator before closing.
+        </action>
         <action>Report the PR URL back to the orchestrator</action>
       </actions>
 
