@@ -152,7 +152,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
     <step order="3" workflow="DOCS" file="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">
       Launch scout → If no changes needed, skip to PR. If trivial, apply directly → Human gate.
-      If substantive, launch audit swarm → Human gate → Apply.
+      If substantive, launch doc auditors → Human gate → Apply.
       Output: Documentation updated to match codebase (or confirmed consistent).
     </step>
 
