@@ -105,9 +105,9 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       <rule>A ticket is ready when all its blocking dependencies are closed</rule>
       <rule>Never close a ticket without completing all workflow phases</rule>
       <rule>
-        When tickets are created or closed, run the beads-sync-protocol
-        (see .starterpack/workflows/WORKFLOW_ENTRY.xml) to push changes to main.
-        This is autonomous — no human gate. Only .beads/ files go on BEADS/ sync branches.
+        Beads changes (.beads/ files) are committed on the current branch alongside code.
+        The pre-commit hook auto-stages .beads/issues.jsonl. The GitHub Action syncs
+        issues to GitHub from any branch push. No separate sync protocol or branch switching needed.
       </rule>
     </rules>
   </beads>
