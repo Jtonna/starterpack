@@ -49,6 +49,7 @@ $Manifest = @(
     "CLAUDE.md"
     "AGENTS.md"
     ".gitattributes"
+    "docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml"
     "docs/.starter_pack_docs/workflows/MODELS.xml"
     "docs/.starter_pack_docs/workflows/BEADS.xml"
     "docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml"
