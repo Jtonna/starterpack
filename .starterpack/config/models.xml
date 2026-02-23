@@ -1,0 +1,101 @@
+<models>
+
+  <overview>
+    This file defines which models to use for each agent role. The orchestrator reads this
+    file to determine model assignments. These are defaults — the orchestrator may escalate
+    to a higher-tier model when a lower-tier agent fails or encounters complexity beyond
+    its capability. The planner's complexity rating can also override the default tier at
+    dispatch time (see dispatch-override section).
+
+    Escalation protocols have moved to .starterpack/behaviors/escalation.xml.
+    Agent Teams constraints have moved to .starterpack/config/agent-teams.xml.
+  </overview>
+
+  <tiers>
+    <tier name="reasoning" model="opus">
+      Planning, review, debugging, escalation, team coordination.
+    </tier>
+    <tier name="worker" model="sonnet">
+      Standard implementation tasks.
+    </tier>
+    <tier name="light" model="haiku">
+      Simple/mechanical implementation — renames, moves, boilerplate, admin operations.
+    </tier>
+  </tiers>
+
+  <roles>
+    <role name="orchestrator" tier="reasoning" escalates-to="none">
+      Never writes code, documentation, or runs commands. Human interface and workflow
+      coordinator only. Launches sub-agents and manages workflow progression.
+      During IMPLEMENTATION, acts as Agent Team lead: creates branches, spawns
+      implementation teammates, monitors progress, and handles escalation directly.
+    </role>
+    <role name="explorer" tier="reasoning" escalates-to="none">
+      Explores codebase and project documentation to build context for planning.
+      Reads code AND docs, but treats code as the source of truth — docs may be outdated.
+      When docs contradict code, flags the discrepancy in the context report.
+      Read-only — never writes code or documentation.
+    </role>
+    <role name="planner" tier="reasoning" escalates-to="none">
+      Drafts implementation plans from tickets. Assigns complexity ratings
+      (light / standard / complex) per sub-task that determine model tier at dispatch.
+    </role>
+    <role name="plan-reviewer" tier="reasoning" escalates-to="none">
+      Reviews plans, raises questions to human via orchestrator.
+    </role>
+    <role name="implementer" tier="worker" escalates-to="reasoning">
+      Writes code. Escalates on failure after 1 retry. See escalation-rules for the
+      full failure protocol that must be included in agent instructions.
+    </role>
+    <role name="light-implementer" tier="light" escalates-to="worker,reasoning">
+      Boilerplate, renames, simple edits. Escalates on any failure.
+    </role>
+    <role name="doc-scout" tier="reasoning" escalates-to="none">
+      Reviews git changes against existing documentation to determine if updates are needed.
+      Triages: no changes, trivial fix, or full audit required.
+      Read-only — never writes code or documentation.
+    </role>
+    <role name="doc-auditor" tier="reasoning" escalates-to="none">
+      Performs deep per-file documentation audit. Produces structured findings with
+      severity ratings and suggested fixes. Read-only — never writes.
+    </role>
+    <role name="doc-writer" tier="worker" escalates-to="orchestrator">
+      Applies approved documentation updates. Only modifies documentation files.
+      Operates in the DOCS workflow — failures escalate directly to the orchestrator.
+    </role>
+    <role name="pr-drafter" tier="reasoning" escalates-to="none">
+      Compiles commits and diffs to draft pull request title, summary, changes table,
+      and AI suggested testing plan. Read-only — never writes code or documentation.
+    </role>
+    <role name="submitter" tier="light" escalates-to="orchestrator">
+      Performs administrative git and GitHub operations: push branches, create PRs via gh,
+      close beads tickets. No code or documentation changes. Operates in the PR workflow
+      — failures escalate directly to the orchestrator.
+    </role>
+  </roles>
+
+  <dispatch-override>
+    The planner assigns a complexity rating to each sub-task during the PLANNING workflow.
+    The orchestrator (team lead) uses this rating to select the model tier for each implementation teammate at dispatch:
+
+    <complexity rating="light" dispatches-at="light">
+      Haiku. Boilerplate, renames, simple mechanical edits.
+    </complexity>
+    <complexity rating="standard" dispatches-at="worker">
+      Sonnet. Normal implementation work.
+    </complexity>
+    <complexity rating="complex" dispatches-at="reasoning">
+      Opus. Known-complex sub-tasks that would likely fail and escalate anyway.
+    </complexity>
+
+    The escalation path still applies regardless of starting tier. A complex task dispatched
+    at reasoning that fails will escalate to the orchestrator for human guidance.
+  </dispatch-override>
+
+  <overrides>
+    To change model assignments for a specific project, edit the roles section above.
+    For example, a budget-conscious project might set implementer to light tier with
+    escalation to worker then reasoning.
+  </overrides>
+
+</models>

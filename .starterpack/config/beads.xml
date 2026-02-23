@@ -1,0 +1,85 @@
+<beads>
+
+  <overview>
+    Beads is the git-backed issue tracker used in this project. Issues live in .beads/issues/
+    as JSON files and can sync to GitHub Issues automatically.
+  </overview>
+
+  <initialization>
+    <description>
+      If .beads/ does not exist in the repo, initialize it before starting any work.
+    </description>
+
+    <commands>
+      <command example="bd init">
+        Auto-detects the project prefix from the directory name.
+      </command>
+      <command example="bd init --prefix sp-">
+        Sets a custom prefix explicitly.
+      </command>
+    </commands>
+
+    <note>
+      The template repository is called "starterpack" but the beads prefix must be 8
+      characters or fewer. Use a short prefix like "sp-" when initializing. The prefix
+      can be changed at any time — see prefix-management below.
+    </note>
+  </initialization>
+
+  <prefix-management>
+    <description>
+      The ticket ID prefix (e.g. "sp-" in "sp-0001") identifies which project a ticket
+      belongs to. This is especially important in monorepos.
+    </description>
+
+    <rename>
+      <command example="bd rename-prefix newname-">Rename all tickets to newname-NNNN</command>
+      <command example="bd rename-prefix newname- --dry-run">Preview changes without applying</command>
+      <command example="bd rename-prefix newname- --repair">Fix corrupted or mixed prefixes</command>
+    </rename>
+
+    <rules>
+      <rule>Max 8 characters</rule>
+      <rule>Lowercase letters, numbers, and hyphens only</rule>
+      <rule>Must start with a letter</rule>
+      <rule>Must end with a hyphen (e.g. "sp-" not "sp")</rule>
+    </rules>
+
+    <discovery>
+      To find the current prefix, read any ticket ID from "bd ready" or "bd stats",
+      or list files in .beads/issues/. The prefix is everything before the numeric ID.
+      Never guess or hardcode the prefix — always discover it from beads.
+    </discovery>
+  </prefix-management>
+
+  <commands>
+    <command name="bd ready">Find tickets with no blockers (ready to work on)</command>
+    <command name="bd blocked">Show tickets blocked by dependencies</command>
+    <command name="bd show ID">Show full details of a ticket</command>
+    <command name="bd stats">Project statistics and progress</command>
+    <command name="bd search QUERY">Search tickets by text</command>
+    <command name="bd comment ID TEXT">Add a comment to a ticket (used for sub-task tracking)</command>
+    <command name="bd close ID --reason TEXT">Close a ticket with a reason summary</command>
+  </commands>
+
+  <issue-types>
+    <type name="feature" branch-prefix="FEAT/">New functionality</type>
+    <type name="bug" branch-prefix="BUG/">Something broken that needs fixing</type>
+    <type name="task" branch-prefix="TASK/">Work items — tests, refactoring, etc.</type>
+    <type name="chore" branch-prefix="CHORE/">Maintenance — deps, tooling, config</type>
+    <type name="epic" branch-prefix="EPIC/">Large feature with subtasks</type>
+
+    <custom>
+      Custom types can be added via: bd config set types.custom "typename1,typename2"
+      Custom types use the type name uppercased as the branch prefix (e.g. SPIKE/).
+    </custom>
+  </issue-types>
+
+  <rules>
+    <rule>Every commit message MUST start with the beads ticket ID</rule>
+    <rule>Tickets track dependencies via the "dependencies" field with type "blocks"</rule>
+    <rule>A ticket is ready when all its blocking dependencies are closed</rule>
+    <rule>Never close a ticket without completing the full workflow</rule>
+  </rules>
+
+</beads>

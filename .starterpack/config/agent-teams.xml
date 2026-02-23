@@ -1,0 +1,18 @@
+<agent-teams>
+
+  <overview>
+    The IMPLEMENTATION workflow uses Claude Code Agent Teams (experimental).
+    This feature MUST be enabled in the project's Claude Code settings:
+      { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+    The install script provisions this automatically in .claude/settings.local.json.
+  </overview>
+
+  <constraints>
+    <rule>Sub-agents (Task tool) cannot spawn other sub-agents</rule>
+    <rule>Only the team lead (orchestrator) can spawn teammates</rule>
+    <rule>Teammates cannot spawn their own teams or sub-agents</rule>
+    <rule>The implementation phase is the ONLY workflow that uses Agent Teams</rule>
+    <rule>All other phases (planning, docs, PR) use standard sub-agents via the Task tool</rule>
+  </constraints>
+
+</agent-teams>
