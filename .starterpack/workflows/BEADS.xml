@@ -69,12 +69,6 @@
     <type name="chore" branch-prefix="CHORE/">Maintenance — deps, tooling, config</type>
     <type name="epic" branch-prefix="EPIC/">Large feature with subtasks</type>
 
-    <system-prefix name="BEADS/" purpose="beads-sync-protocol">
-      Reserved for automated beads ticket sync branches. Not tied to an issue type.
-      Created by the beads-sync-protocol (see WORKFLOW_ENTRY.xml) when ticket changes
-      need to reach main. These branches are auto-merged and deleted — never manual.
-    </system-prefix>
-
     <custom>
       Custom types can be added via: bd config set types.custom "typename1,typename2"
       Custom types use the type name uppercased as the branch prefix (e.g. SPIKE/).

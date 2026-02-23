@@ -76,10 +76,10 @@
           flag this to the orchestrator before closing.
         </action>
         <action>
-          After closing the ticket, run the beads-sync-protocol (see WORKFLOW_ENTRY.xml)
-          to push the ticket close to main. Note: if the PR itself is merging to main,
-          the beads changes will be included in the merge — only run the sync protocol
-          if the ticket close happened after the PR was already merged.
+          After closing the ticket, ensure the beads changes (.beads/ files) are committed
+          on the feature branch before the PR merges. The ticket closure will reach the
+          default branch via the PR merge, and the GitHub Action will close the GitHub Issue
+          at that point. No separate sync protocol is needed.
         </action>
         <action>Report the PR URL back to the orchestrator</action>
       </actions>
