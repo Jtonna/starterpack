@@ -47,7 +47,7 @@
 
       <actions>
         <action>Break the ticket into small, isolated sub-tasks</action>
-        <action>Each sub-task must be completable by a single implementation agent</action>
+        <action>Each sub-task must be completable by a single implementation teammate</action>
         <action>
           For each sub-task, specify:
           - What to change and which files

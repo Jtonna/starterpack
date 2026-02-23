@@ -58,8 +58,7 @@
     </role>
     <role name="doc-writer" tier="worker" escalates-to="orchestrator">
       Applies approved documentation updates. Only modifies documentation files.
-      Operates in the DOCS workflow with no swarm manager — failures escalate
-      directly to the orchestrator.
+      Operates in the DOCS workflow — failures escalate directly to the orchestrator.
     </role>
     <role name="pr-drafter" tier="reasoning" escalates-to="none">
       Compiles commits and diffs to draft pull request title, summary, changes table,
@@ -68,7 +67,7 @@
     <role name="submitter" tier="light" escalates-to="orchestrator">
       Performs administrative git and GitHub operations: push branches, create PRs via gh,
       close beads tickets. No code or documentation changes. Operates in the PR workflow
-      with no swarm manager — failures escalate directly to the orchestrator.
+      — failures escalate directly to the orchestrator.
     </role>
   </roles>
 
@@ -109,7 +108,7 @@
       </rule>
       <rule order="2">
         If the retry fails, stop immediately. Commit any partial work that is valid.
-        Return a structured failure report to the swarm manager:
+        Return a structured failure report to the orchestrator (team lead):
           FAILURE REPORT
           Sub-task: {description}
           Attempted: {what was tried}
@@ -131,8 +130,7 @@
 
     <section name="doc-workflow-agents">
       <description>
-        For doc-writer agents operating in the DOCS workflow. There is no swarm manager
-        in the DOCS workflow — doc-writers report directly to the orchestrator.
+        For doc-writer agents operating in the DOCS workflow. Doc-writers report directly to the orchestrator.
       </description>
       <rule order="1">
         If you encounter an error, retry once with a different approach.
@@ -148,8 +146,7 @@
 
     <section name="admin-agents">
       <description>
-        For the submitter agent operating in the PR workflow. There is no swarm manager
-        in the PR workflow — the submitter reports directly to the orchestrator.
+        For the submitter agent operating in the PR workflow. The submitter reports directly to the orchestrator.
       </description>
       <rule order="1">
         If a git or GitHub operation fails (e.g. push rejected, gh pr create fails),

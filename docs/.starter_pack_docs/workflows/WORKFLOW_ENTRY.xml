@@ -166,7 +166,7 @@
   <scope-enforcement>
     <!--
       This is a hard rule. Every agent in the hierarchy must respect scope boundaries.
-      The orchestrator enforces this at the top level, and implementation agents enforce
+      The orchestrator enforces this at the top level, and implementation teammates enforce
       it at the code level.
     -->
 
@@ -190,13 +190,12 @@
     </rule>
 
     <rule name="AGENT_SCOPE_ENFORCEMENT">
-      Implementation agents must only modify files specified in their sub-task.
-      If an agent discovers that out-of-scope changes are needed:
+      Implementation teammates must only modify files specified in their sub-task.
+      If a teammate discovers that out-of-scope changes are needed:
       1. Stop work on the out-of-scope change
-      2. Report back to the swarm manager with what was discovered
-      3. The swarm manager escalates to the orchestrator
-      4. The orchestrator creates a new ticket for the out-of-scope work and informs the human
-      5. The original sub-task continues without the out-of-scope change
+      2. Report back to the orchestrator (team lead) with what was discovered
+      3. The orchestrator creates a new ticket for the out-of-scope work and informs the human
+      4. The original sub-task continues without the out-of-scope change
     </rule>
   </scope-enforcement>
 

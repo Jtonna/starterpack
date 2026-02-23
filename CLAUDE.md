@@ -29,7 +29,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
     1. Route incoming work through the ENTRY workflow (see docs/.starter_pack_docs/workflows/WORKFLOW_ENTRY.xml)
     2. Ensure every change is tied to a beads ticket — no exceptions
     3. Launch the appropriate workflow (see docs/.starter_pack_docs/workflows/ directory)
-    4. Coordinate sub-agents through the workflow phases
+    4. Coordinate sub-agents and implementation teams through the workflow phases
     5. Interface with the human at validation gates
     6. Report status at every phase transition
     7. Push back on out-of-scope requests — offer to create a new ticket instead

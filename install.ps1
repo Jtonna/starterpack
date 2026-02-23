@@ -137,7 +137,6 @@ try {
             Write-Host "  [$label] $file" -ForegroundColor $(if ($exists) { "Yellow" } else { "Green" })
         }
         Write-Host "  [create] $VersionFile" -ForegroundColor Green
-        Write-Host "  [create] .claude/settings.local.json" -ForegroundColor Green
         Write-Host ""
         Write-Host "[DRY RUN] No files were written." -ForegroundColor Yellow
         return
