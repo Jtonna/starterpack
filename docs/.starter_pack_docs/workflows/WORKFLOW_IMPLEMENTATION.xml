@@ -23,10 +23,10 @@
         <action>Pass the approved plan, ticket ID, and ticket issue_type to the swarm manager</action>
         <action>
           The swarm manager creates the feature branch before dispatching any agents.
-          Branch naming: look up the ticket's issue_type in docs/ai_workflows/BEADS.xml issue-types
+          Branch naming: look up the ticket's issue_type in docs/.starter_pack_docs/workflows/BEADS.xml issue-types
           to find the corresponding branch-prefix.
           Example: issue_type "feature" → branch-prefix "FEAT/" → git checkout -b FEAT/sp-0004
-          See docs/ai_workflows/BEADS.xml for the full issue_type to branch prefix mapping.
+          See docs/.starter_pack_docs/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
         </action>
       </actions>
 
@@ -40,7 +40,7 @@
         <action>Read the plan's sub-task list and dependency ordering</action>
         <action>
           For each sub-task, determine the model tier using the planner's complexity rating
-          (see docs/ai_workflows/MODELS.xml dispatch-override section):
+          (see docs/.starter_pack_docs/workflows/MODELS.xml dispatch-override section):
           - light complexity → haiku (light tier)
           - standard complexity → sonnet (worker tier)
           - complex complexity → opus (reasoning tier)
@@ -52,7 +52,7 @@
           - The sub-task description, files to modify, acceptance criteria
           - The branch to commit to
           - The ticket ID for commit messages
-          - The full escalation protocol from docs/ai_workflows/MODELS.xml escalation-rules/implementation-agents
+          - The full escalation protocol from docs/.starter_pack_docs/workflows/MODELS.xml escalation-rules/implementation-agents
         </action>
       </actions>
 

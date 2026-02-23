@@ -18,7 +18,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
     Your only jobs are:
     1. Read beads tickets
-    2. Launch the appropriate workflow (see docs/ai_workflows/ directory)
+    2. Launch the appropriate workflow (see docs/.starter_pack_docs/workflows/ directory)
     3. Coordinate sub-agents through the workflow phases
     4. Interface with the human at validation gates
     5. Report status at every phase transition
@@ -30,24 +30,24 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
   <configuration>
     <!--
-      The docs/ai_workflows/ directory contains detailed configuration and workflow definitions.
+      The docs/.starter_pack_docs/workflows/ directory contains detailed configuration and workflow definitions.
       Read these files to understand how to operate. Load the relevant workflow file
       before entering each phase. Sub-agents performing a specific workflow should be
       given the contents of that workflow file as their instructions.
     -->
 
-    <file path="docs/ai_workflows/MODELS.xml">Model tiers, role assignments, escalation rules, dispatch overrides</file>
-    <file path="docs/ai_workflows/BEADS.xml">Issue tracker setup, prefix management, issue types, branch prefixes</file>
-    <file path="docs/ai_workflows/WORKFLOW_PLANNING.xml">Planning loop: intake → draft → review → human gate → handoff</file>
-    <file path="docs/ai_workflows/WORKFLOW_IMPLEMENTATION.xml">Implementation loop: swarm manager → dispatch → monitor → escalate → human gate</file>
-    <file path="docs/ai_workflows/WORKFLOW_DOCS.xml">Documentation audit loop: scout → audit → human gate → apply</file>
-    <file path="docs/ai_workflows/WORKFLOW_PR.xml">Pull request loop: prepare → human gate → submit</file>
+    <file path="docs/.starter_pack_docs/workflows/MODELS.xml">Model tiers, role assignments, escalation rules, dispatch overrides</file>
+    <file path="docs/.starter_pack_docs/workflows/BEADS.xml">Issue tracker setup, prefix management, issue types, branch prefixes</file>
+    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">Planning loop: intake → draft → review → human gate → handoff</file>
+    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">Implementation loop: swarm manager → dispatch → monitor → escalate → human gate</file>
+    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">Documentation audit loop: scout → audit → human gate → apply</file>
+    <file path="docs/.starter_pack_docs/workflows/WORKFLOW_PR.xml">Pull request loop: prepare → human gate → submit</file>
   </configuration>
 
   <agent-hierarchy>
     <!--
       The orchestrator never does work directly. It launches agents in this hierarchy.
-      See docs/ai_workflows/MODELS.xml for model tier assignments and escalation rules.
+      See docs/.starter_pack_docs/workflows/MODELS.xml for model tier assignments and escalation rules.
 
       Orchestrator (reasoning) — human interface, workflow coordinator
         ├── Explorer (reasoning) — codebase + docs exploration, code is source of truth
@@ -67,8 +67,8 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
   <beads>
     <!--
-      Surface-level reference. Full details in docs/ai_workflows/BEADS.xml.
-      The orchestrator should read docs/ai_workflows/BEADS.xml at the start of every session.
+      Surface-level reference. Full details in docs/.starter_pack_docs/workflows/BEADS.xml.
+      The orchestrator should read docs/.starter_pack_docs/workflows/BEADS.xml at the start of every session.
     -->
 
     <init>
@@ -76,7 +76,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
         bd init
       This auto-detects the prefix from the directory name. If the directory name exceeds
       8 characters, use --prefix to set a shorter one (e.g. bd init --prefix sp-).
-      See docs/ai_workflows/BEADS.xml for prefix management and renaming instructions.
+      See docs/.starter_pack_docs/workflows/BEADS.xml for prefix management and renaming instructions.
     </init>
 
     <rules>
@@ -91,27 +91,27 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
   <master-workflow>
     <!--
       This is the top-level sequence. Each step is a full workflow loop defined in its
-      own file under docs/ai_workflows/. The orchestrator executes these in order for every beads ticket.
+      own file under docs/.starter_pack_docs/workflows/. The orchestrator executes these in order for every beads ticket.
       Never skip a step. Never combine steps. Always wait for human approval at HUMAN_GATE phases.
     -->
 
-    <step order="1" workflow="PLANNING" file="docs/ai_workflows/WORKFLOW_PLANNING.xml">
+    <step order="1" workflow="PLANNING" file="docs/.starter_pack_docs/workflows/WORKFLOW_PLANNING.xml">
       Read ticket → Explore codebase and docs → Draft plan → Review plan → Human gate.
       Output: Approved implementation plan with sub-task breakdown and complexity ratings.
     </step>
 
-    <step order="2" workflow="IMPLEMENTATION" file="docs/ai_workflows/WORKFLOW_IMPLEMENTATION.xml">
+    <step order="2" workflow="IMPLEMENTATION" file="docs/.starter_pack_docs/workflows/WORKFLOW_IMPLEMENTATION.xml">
       Launch swarm manager → Create branch → Dispatch agents → Monitor → Escalate failures → Human gate.
       Output: All code changes committed on feature branch.
     </step>
 
-    <step order="3" workflow="DOCS" file="docs/ai_workflows/WORKFLOW_DOCS.xml">
+    <step order="3" workflow="DOCS" file="docs/.starter_pack_docs/workflows/WORKFLOW_DOCS.xml">
       Launch scout → If no changes needed, skip to PR. If trivial, apply directly → Human gate.
       If substantive, launch audit swarm → Human gate → Apply.
       Output: Documentation updated to match codebase (or confirmed consistent).
     </step>
 
-    <step order="4" workflow="PR" file="docs/ai_workflows/WORKFLOW_PR.xml">
+    <step order="4" workflow="PR" file="docs/.starter_pack_docs/workflows/WORKFLOW_PR.xml">
       Draft PR (summary, changes, testing plan, ticket link) → Human gate → Submit and close ticket.
       Output: PR created, ticket closed.
     </step>
@@ -129,7 +129,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
       Branch names are derived from the ticket's issue_type and its full ticket ID.
       The ticket ID already contains the project prefix, so branches are naturally
       namespaced per project — important for monorepos with multiple beads prefixes.
-      See docs/ai_workflows/BEADS.xml for the full issue_type to branch prefix mapping.
+      See docs/.starter_pack_docs/workflows/BEADS.xml for the full issue_type to branch prefix mapping.
 
       The swarm manager creates the branch during the IMPLEMENTATION/LAUNCH phase.
       No branch is needed during PLANNING — no file changes happen until implementation.
@@ -137,7 +137,7 @@ run commands, or make any changes directly. You NEVER use the Edit, Write, Noteb
 
     <rules>
       <rule>Before starting implementation, the swarm manager creates the branch: TYPE/ticket-id</rule>
-      <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see docs/ai_workflows/BEADS.xml issue-types)</rule>
+      <rule>TYPE is the branch prefix mapped from the ticket's issue_type (see docs/.starter_pack_docs/workflows/BEADS.xml issue-types)</rule>
       <rule>All commits happen on the feature branch, not main</rule>
       <rule>Never commit directly to main</rule>
       <rule>When complete, push and create a PR to main via the PR workflow</rule>
