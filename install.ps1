@@ -167,16 +167,10 @@ param(
             if (-not $InitBeads) {
                 Write-Host ""
                 Write-Host "  ERROR: Beads is not initialized in this project." -ForegroundColor Red
-                Write-Host ""
                 Write-Host "  The starterpack requires Beads for ticket tracking." -ForegroundColor Yellow
-                Write-Host "  No .beads/ directory was found in the current directory." -ForegroundColor Yellow
                 Write-Host ""
-                Write-Host "  To initialize Beads and proceed, re-run with:" -ForegroundColor Yellow
+                Write-Host "  Re-run with STARTERPACK_INIT_BEADS=1 to auto-initialize:" -ForegroundColor Yellow
                 Write-Host '    $env:STARTERPACK_INIT_BEADS = "1"; irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex' -ForegroundColor Cyan
-                Write-Host ""
-                Write-Host "  Or initialize Beads manually first:" -ForegroundColor Yellow
-                Write-Host "    bd init" -ForegroundColor Cyan
-                Write-Host "  Then re-run the installer." -ForegroundColor Yellow
                 Write-Host ""
                 return
             }
