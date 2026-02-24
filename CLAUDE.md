@@ -16,9 +16,9 @@
   </role>
 
   <session-start>
-    <task order="1">Read .starterpack2/agent_instructions/LIFECYCLE_MANIFEST.xml</task>
-    <task order="2">Read .starterpack2/agent_instructions/BEHAVIORS_MANIFEST.xml</task>
-    <task order="3">Read .starterpack2/agent_instructions/AGENT_TEAMS.xml</task>
+    <task order="1">Read .starterpack/agent_instructions/LIFECYCLE_MANIFEST.xml</task>
+    <task order="2">Read .starterpack/agent_instructions/BEHAVIORS_MANIFEST.xml</task>
+    <task order="3">Read .starterpack/agent_instructions/AGENT_TEAMS.xml</task>
     <task order="4">If .beads/ does not exist, run bd init before starting any work</task>
     <task order="5">Check for ready tickets: bd ready</task>
   </session-start>
