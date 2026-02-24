@@ -29,7 +29,9 @@
 param(
     [string]$Version = $env:STARTERPACK_VERSION,
     [switch]$DryRun,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$InitBeads,
+    [switch]$NoCommit
 )
 
 # When piped through iex, CmdletBinding/param are ignored.
@@ -38,11 +40,15 @@ param(
     param(
         [string]$Version,
         [switch]$DryRun,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$InitBeads,
+        [switch]$NoCommit
     )
 
     if ($env:STARTERPACK_DRYRUN -eq "1") { $DryRun = [switch]::Present }
     if ($env:STARTERPACK_FORCE -eq "1") { $Force = [switch]::Present }
+    if ($env:STARTERPACK_INIT_BEADS -eq "1") { $InitBeads = $true }
+    if ($env:STARTERPACK_NO_COMMIT -eq "1") { $NoCommit = $true }
     if (-not $Version) {
         if ($env:STARTERPACK_VERSION) { $Version = $env:STARTERPACK_VERSION }
         else { $Version = "latest" }
@@ -72,11 +78,14 @@ param(
         ".starterpack/agent_instructions/behaviors/pr-template.xml"
         ".starterpack/agent_instructions/behaviors/human-gate.xml"
         ".starterpack/agent_instructions/behaviors/response-format.xml"
+        ".starterpack/agent_instructions/behaviors/create-behavior.xml"
+        ".starterpack/agent_instructions/behaviors/create-lifecycle.xml"
         ".starterpack/agent_instructions/lifecycle/entry.xml"
         ".starterpack/agent_instructions/lifecycle/planning.xml"
         ".starterpack/agent_instructions/lifecycle/implementation.xml"
         ".starterpack/agent_instructions/lifecycle/docs.xml"
         ".starterpack/agent_instructions/lifecycle/pr.xml"
+        ".starterpack/agent_instructions/lifecycle/authoring-behaviors-and-lifecycles.xml"
         ".starterpack/beads_sync.md"
         ".starterpack/hooks/post-merge"
         ".github/workflows/beads-sync.yml"
@@ -148,6 +157,46 @@ param(
             Write-Host "Upgrading from $currentVersion to $resolvedVersion" -ForegroundColor Cyan
         } else {
             Write-Host "Installing starterpack $resolvedVersion" -ForegroundColor Cyan
+        }
+
+        # --- Beads prerequisite gate ---
+        $beadsInitialized = (Test-Path ".beads/config.yaml") -or (Test-Path ".beads/metadata.json")
+
+        if (-not $beadsInitialized) {
+            if (-not $InitBeads) {
+                Write-Host ""
+                Write-Host "  ERROR: Beads is not initialized in this project." -ForegroundColor Red
+                Write-Host ""
+                Write-Host "  The starterpack requires Beads for ticket tracking." -ForegroundColor Yellow
+                Write-Host "  No .beads/ directory was found in the current directory." -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "  To initialize Beads and proceed with installation, re-run with -InitBeads" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "  To initialize Beads manually first, run:" -ForegroundColor Yellow
+                Write-Host "    bd init" -ForegroundColor Cyan
+                Write-Host "  Then re-run the installer." -ForegroundColor Yellow
+                Write-Host ""
+                return
+            }
+            if (-not (Get-Command "bd" -ErrorAction SilentlyContinue)) {
+                Write-Host ""
+                Write-Host "  ERROR: -InitBeads was specified but 'bd' was not found on PATH." -ForegroundColor Red
+                Write-Host "  Install Beads from: https://github.com/cosmix/beads" -ForegroundColor Yellow
+                Write-Host ""
+                return
+            }
+            if ($DryRun) {
+                Write-Host "[DRY RUN] Would run: bd init (Beads not yet initialized)"
+            } else {
+                Write-Host "  Initializing Beads..."
+                bd init
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "  ERROR: bd init failed (exit code $LASTEXITCODE)." -ForegroundColor Red
+                    Write-Host "  Run 'bd init' manually, then re-run the installer." -ForegroundColor Yellow
+                    return
+                }
+                Write-Host "  [ok] Beads initialized successfully." -ForegroundColor Green
+            }
         }
 
         if ($DryRun) {
@@ -266,34 +315,47 @@ param(
             }
         }
 
-        # Step 9: Auto-commit installed files
-        if (Test-Path (Join-Path $PWD ".git")) {
-            Write-Host ""
-            Write-Host "Committing starterpack files..." -ForegroundColor Cyan
-
-            # Stage manifest files + version file (only files that exist on disk)
-            $filesToStage = @($VersionFile) + $Manifest
-            $staged = 0
-            foreach ($file in $filesToStage) {
-                $filePath = Join-Path $PWD ($file -replace "/", [IO.Path]::DirectorySeparatorChar)
-                if (Test-Path $filePath) {
-                    git add -- $file 2>$null
-                    $staged++
-                }
-            }
-
-            # Only commit if there are staged changes
-            $status = git diff --cached --name-only 2>$null
-            if ($status) {
-                $action = if ($currentVersion) { "upgrade" } else { "install" }
-                git commit -m "chore: $action starterpack $resolvedVersion" 2>$null
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "  [ok] Committed starterpack files ($staged staged)" -ForegroundColor Green
-                } else {
-                    Write-Host "  [warn] git commit failed — you may need to commit manually" -ForegroundColor Yellow
-                }
+        # --- Auto-commit ---
+        if (-not $NoCommit) {
+            if (-not (Test-Path ".git")) {
+                Write-Host "  [skip] Not a git repository - skipping commit" -ForegroundColor Yellow
             } else {
-                Write-Host "  [ok] No changes to commit (files already up to date)" -ForegroundColor Green
+                # Check for pre-existing staged changes
+                $priorStaged = git diff --cached --name-only 2>$null
+                if ($priorStaged) {
+                    Write-Host ""
+                    Write-Host "  [warn] Skipping auto-commit: you have staged changes that predate this install." -ForegroundColor Yellow
+                    Write-Host "         Commit or unstage your existing changes first, then re-run." -ForegroundColor Yellow
+                    Write-Host "         Or commit the starterpack files manually:" -ForegroundColor Yellow
+                    Write-Host "           git add CLAUDE.md .starterpack/ .starterpack-version" -ForegroundColor Cyan
+                    $commitAction = if ($currentVersion) { "upgrade" } else { "install" }
+                    Write-Host "           git commit -m 'chore: $commitAction starterpack $resolvedVersion'" -ForegroundColor Cyan
+                } else {
+                    if ($DryRun) {
+                        $commitAction = if ($currentVersion) { "upgrade" } else { "install" }
+                        Write-Host "[DRY RUN] Would commit: chore: $commitAction starterpack $resolvedVersion"
+                    } else {
+                        # Stage only specific installed files
+                        $filesToStage = @("CLAUDE.md", ".starterpack-version", ".starterpack/")
+                        if (Test-Path ".beads/") { $filesToStage += ".beads/" }
+                        foreach ($f in $filesToStage) {
+                            if (Test-Path $f) { git add -- $f 2>$null }
+                        }
+
+                        $staged = git diff --cached --name-only 2>$null
+                        if ($staged) {
+                            $commitAction = if ($currentVersion) { "upgrade starterpack to $resolvedVersion" } else { "install starterpack $resolvedVersion" }
+                            git commit -m "chore: $commitAction"
+                            if ($LASTEXITCODE -eq 0) {
+                                Write-Host "  [ok] Committed: chore: $commitAction" -ForegroundColor Green
+                            } else {
+                                Write-Host "  [warn] git commit failed - commit manually" -ForegroundColor Yellow
+                            }
+                        } else {
+                            Write-Host "  [ok] No changes to commit (files already up to date)" -ForegroundColor Green
+                        }
+                    }
+                }
             }
         }
 
@@ -338,4 +400,4 @@ param(
             Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
-} -Version $Version -DryRun:$DryRun -Force:$Force
+} -Version $Version -DryRun:$DryRun -Force:$Force -InitBeads:$InitBeads -NoCommit:$NoCommit

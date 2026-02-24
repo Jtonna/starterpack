@@ -41,7 +41,7 @@
       Read ticket → Explore codebase and docs → Draft plan → Review plan → HUMAN_GATE.
     </task>
     <task order="2" lifecycle="IMPLEMENTATION">
-      Create branch → Spawn implementation team → Monitor → Escalate failures → HUMAN_GATE → Push.
+      Create branch → Spawn implementation team → Monitor → Escalate failures (technical → Opus, requirements → human) → HUMAN_GATE → Push.
     </task>
     <task order="3" lifecycle="DOCS">
       Launch scout → Triage changes → If needed, audit and apply → HUMAN_GATE.
