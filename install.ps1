@@ -196,6 +196,10 @@ param(
                     return
                 }
                 Write-Host "  [ok] Beads initialized successfully." -ForegroundColor Green
+                # bd init creates an AGENTS.md that conflicts with the starterpack setup — discard it
+                if (Test-Path "AGENTS.md") {
+                    Remove-Item "AGENTS.md" -Force
+                }
             }
         }
 
