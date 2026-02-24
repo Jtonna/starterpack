@@ -1,8 +1,8 @@
-<agent-teams>
+<models-and-roles>
 
   <purpose>
     Defines how the orchestrator composes teams: model tiers, agent roles, dispatch rules,
-    and Agent Teams constraints. The orchestrator reads this at session start alongside
+    and team constraints. The orchestrator reads this at session start alongside
     the manifests.
   </purpose>
 
@@ -100,4 +100,4 @@
     Max quality: set everything to reasoning.
   </overrides>
 
-</agent-teams>
+</models-and-roles>

@@ -63,7 +63,7 @@ param(
         ".gitattributes"
         ".starterpack/agent_instructions/BEHAVIORS_MANIFEST.xml"
         ".starterpack/agent_instructions/LIFECYCLE_MANIFEST.xml"
-        ".starterpack/agent_instructions/AGENT_TEAMS.xml"
+        ".starterpack/agent_instructions/MODELS_AND_ROLES.xml"
         ".starterpack/agent_instructions/behaviors/git-with-beads.xml"
         ".starterpack/agent_instructions/behaviors/escalation.xml"
         ".starterpack/agent_instructions/behaviors/scope-enforcement.xml"

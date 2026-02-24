@@ -38,7 +38,7 @@ Manifests are lightweight summaries that tell the orchestrator what's available 
 
 - **`BEHAVIORS_MANIFEST.xml`** — lists every behavior with a one-paragraph summary and which roles it applies to
 - **`LIFECYCLE_MANIFEST.xml`** — lists every lifecycle phase with a summary and which behaviors it uses
-- **`AGENT_TEAMS.xml`** — model tiers, agent roles, dispatch rules, and team constraints
+- **`MODELS_AND_ROLES.xml`** — model tiers, agent roles, dispatch rules, and team constraints
 
 The orchestrator never needs to read all behavior files upfront. It reads the manifest, knows what's available, and pulls in specific files when it needs them.
 
@@ -133,7 +133,7 @@ release.ps1                                        # Release tagging script (mai
   agent_instructions/
     BEHAVIORS_MANIFEST.xml                         # Index of all behaviors (load on demand)
     LIFECYCLE_MANIFEST.xml                         # Index of all lifecycle phases
-    AGENT_TEAMS.xml                                # Model tiers, roles, dispatch rules
+    MODELS_AND_ROLES.xml                                # Model tiers, roles, dispatch rules
     behaviors/                                     # HOW — self-contained, zero cross-references
       git-with-beads.xml                           #   Branching, commits, push, beads integration
       escalation.xml                               #   Failure protocol, model-tier escalation chains
@@ -162,7 +162,7 @@ release.ps1                                        # Release tagging script (mai
 
 Everything is meant to be tweaked:
 
-- **`AGENT_TEAMS.xml`** — Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
+- **`MODELS_AND_ROLES.xml`** — Change which models handle which roles. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
 - **Behavior files** — Modify agent capabilities independently. Each file owns one concern. Add a new behavior by creating a file and adding it to the manifest.
 - **Lifecycle files** — Add or remove phases, adjust which behaviors are loaded, change what gets presented at human gates.
 - **`human-gate.xml`** — Customize what information is presented at each approval checkpoint per lifecycle.

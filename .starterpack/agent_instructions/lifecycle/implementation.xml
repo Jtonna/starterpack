@@ -42,7 +42,7 @@
         <action>Read the plan's sub-task list and dependency ordering</action>
         <action>
           For each sub-task, determine the model tier using the planner's complexity rating
-          (see AGENT_TEAMS.xml dispatch-override):
+          (see MODELS_AND_ROLES.xml dispatch-override):
           - light → haiku
           - standard → sonnet
           - complex → opus
