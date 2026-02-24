@@ -1,11 +1,8 @@
 <behavior name="pr-template">
 
   <summary>
-    Pull request body template structure. The PR drafter uses this to compose
-    the PR description presented to the human for approval.
+    Pull request body template structure for composing the PR description.
   </summary>
-
-  <applies-to>pr-drafter</applies-to>
 
   <template>
     ## Summary

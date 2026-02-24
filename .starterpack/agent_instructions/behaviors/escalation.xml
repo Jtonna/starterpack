@@ -6,19 +6,25 @@
     agents understand the escalation hierarchy without referencing external files.
   </summary>
 
-  <applies-to>all agents</applies-to>
+
 
   <!-- ═══════════════════════════════════════════════════════════════════════
        MODEL TIERS (embedded for self-containment)
        ═══════════════════════════════════════════════════════════════════════ -->
 
-  <model-tiers>
-    <tier name="reasoning" model="opus">Planning, review, debugging, escalation, team coordination.</tier>
-    <tier name="worker" model="sonnet">Standard implementation tasks.</tier>
-    <tier name="light" model="haiku">Simple/mechanical implementation — renames, moves, boilerplate.</tier>
-  </model-tiers>
+  <section name="model-tiers">
+    <model-tiers>
+      <tier name="reasoning" model="opus">Planning, review, debugging, escalation, team coordination.</tier>
+      <tier name="worker" model="sonnet">Standard implementation tasks.</tier>
+      <tier name="light" model="haiku">Simple/mechanical implementation — renames, moves, boilerplate.</tier>
+    </model-tiers>
+  </section>
 
-  <escalation-chains>
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ESCALATION CHAINS
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="escalation-chains">
     Escalation means upgrading to a more capable model when the current tier fails.
     This is MODEL-TIER escalation, separate from WORKFLOW escalation (reporting to orchestrator/human).
     All agents can always escalate to the orchestrator regardless of their tier.
@@ -28,7 +34,7 @@
     <chain role="doc-writer">worker → orchestrator → human</chain>
     <chain role="submitter">light → orchestrator → human</chain>
     <chain role="reasoning-agents">reasoning → human (already at highest tier)</chain>
-  </escalation-chains>
+  </section>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
        FAILURE PROTOCOLS BY AGENT TYPE

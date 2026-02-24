@@ -5,8 +5,6 @@
     Every change must be tied to a beads ticket. Agents must only modify files assigned to them.
   </summary>
 
-  <applies-to>orchestrator, implementer, light-implementer</applies-to>
-
   <section name="orchestrator-level">
     <rule name="NO_UNTRACKED_CHANGES">
       Every change to the codebase must be tied to a beads ticket. If an agent discovers

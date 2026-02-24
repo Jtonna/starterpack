@@ -5,24 +5,22 @@
     tickets — they are tracked as structured comments on the parent ticket.
   </summary>
 
-  <applies-to>orchestrator</applies-to>
-
-  <rules>
-    <rule>
-      After plan approval in PLANNING, the orchestrator posts the approved sub-task list
+  <section name="rules">
+    <rule order="1">
+      After plan approval, the orchestrator posts the approved sub-task list
       as a comment on the ticket: bd comment {ticket-id} "Sub-tasks: ..."
     </rule>
-    <rule>
-      During IMPLEMENTATION, the orchestrator (team lead) updates sub-task status as
+    <rule order="2">
+      During implementation, the orchestrator (team lead) updates sub-task status as
       teammates report progress:
         [sub-task N] DONE: {description}
         [sub-task N] FAILED: {description} — {reason}
         [sub-task N] IN_PROGRESS: {description}
     </rule>
-    <rule>
+    <rule order="3">
       Sub-task updates are posted as new comments on the ticket, not edits to existing comments.
       This preserves a timeline of progress.
     </rule>
-  </rules>
+  </section>
 
 </behavior>
