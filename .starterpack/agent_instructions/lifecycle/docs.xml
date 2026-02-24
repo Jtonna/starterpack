@@ -11,9 +11,12 @@
 
   <loop>
     <!--
-      SCOUT → (no changes → HANDOFF)
-            → (trivial → HUMAN_GATE → APPLY → HANDOFF)
-            → (changes needed → AUDIT → HUMAN_GATE → APPLY → HANDOFF)
+      SCOUT → (no changes needed) ──────────────────────────────→ HANDOFF
+            → (trivial change)    ──→ HUMAN_GATE → APPLY ───────→ HANDOFF
+            → (changes needed)    ──→ AUDIT → HUMAN_GATE → APPLY → HANDOFF
+                                                    │
+                                                    │ rejected → AUDIT
+                                                    └──────────┘
     -->
 
     <phase name="SCOUT" order="1">
@@ -28,6 +31,13 @@
           - CHANGES_NEEDED: significant doc updates required → proceed to AUDIT
         </action>
       </actions>
+      <on-success>
+        Route based on triage outcome:
+        NO_CHANGES_NEEDED → HANDOFF;
+        TRIVIAL_CHANGE → HUMAN_GATE;
+        CHANGES_NEEDED → AUDIT
+      </on-success>
+      <on-failure>Stop and report to the orchestrator — cannot proceed without a triage outcome</on-failure>
     </phase>
 
     <phase name="AUDIT" order="2">
@@ -41,10 +51,18 @@
           - Suggested fix
         </action>
       </actions>
+      <on-success>Proceed to HUMAN_GATE</on-success>
+      <on-failure>Stop and report findings to the orchestrator</on-failure>
     </phase>
 
     <phase name="HUMAN_GATE" order="3">
-      <action>Present doc findings for approval (see human-gate behavior, context: DOC_REVIEW)</action>
+      <actor>Orchestrator (reasoning tier)</actor>
+      <actions>
+        <action>Present doc findings for approval (see human-gate behavior, context: DOC_REVIEW)</action>
+      </actions>
+      <on-success>Proceed to APPLY</on-success>
+      <on-rejection>Feed corrections back to Doc Auditors → loop to AUDIT</on-rejection>
+      <on-failure>Report the failure to the human. Do not proceed.</on-failure>
     </phase>
 
     <phase name="APPLY" order="4">
@@ -53,10 +71,17 @@
         <action>Apply the human-approved documentation updates</action>
         <action>Commit changes with the ticket ID prefix</action>
       </actions>
+      <on-success>Proceed to HANDOFF</on-success>
+      <on-failure>Stop and report to the orchestrator</on-failure>
     </phase>
 
     <phase name="HANDOFF" order="5">
-      Proceed to PR.
+      <actor>Orchestrator (reasoning tier)</actor>
+      <actions>
+        <action>Proceed to PR.</action>
+      </actions>
+      <on-success>Lifecycle complete. Proceed to PR.</on-success>
+      <on-failure>Report the failure to the human. Do not proceed.</on-failure>
     </phase>
 
   </loop>

@@ -5,60 +5,118 @@
     Selects branching strategy. Every change must be tied to a beads ticket.
   </summary>
 
+  <!--
+    ASCII FLOW — ENTRY lifecycle
+
+    [START]
+        |
+        v
+    [Phase 1: IDENTIFY_ENTRY]
+        |
+        |-- EXISTING_TICKET -------> [Phase 2: TICKET_AND_BRANCH_SETUP] --> [PLANNING]
+        |
+        |-- AD_HOC_REQUEST --------> [Phase 2: TICKET_AND_BRANCH_SETUP] --> [PLANNING]
+        |
+        \-- SPEC_FILE ------------> [Phase 2: TICKET_AND_BRANCH_SETUP]
+                                          |
+                                          v
+                                    [Phase 3: SPEC_FILE_APPROVAL]
+                                          |
+                                          |-- approved --> [PLANNING]
+                                          |
+                                          \-- rejected --> [Phase 2: TICKET_AND_BRANCH_SETUP]
+                                                           (revise breakdown and re-present)
+  -->
+
   <uses-behavior name="git-with-beads" />
   <uses-behavior name="scope-enforcement" />
   <uses-behavior name="human-gate" context="ENTRY/SPEC_FILE_APPROVAL" />
   <uses-behavior name="response-format" lifecycle="ENTRY" />
 
-  <entry-points>
+  <phase name="IDENTIFY_ENTRY" order="1">
+    <actor>Orchestrator (reasoning tier)</actor>
+    <actions>
+      <action>
+        Determine which entry point applies based on the human's request:
+        - EXISTING_TICKET: A beads ticket already exists (the human says "work on KAN-29b"
+          or the orchestrator picks one from "bd ready").
+        - SPEC_FILE: The human points to a spec file or provides a large feature description
+          that needs to be broken into multiple tickets before work can begin.
+        - AD_HOC_REQUEST: The human gives an instruction directly (e.g. "add a logout button").
+          This is NOT a ticket yet.
+      </action>
+      <action>
+        If the request does not match any recognized entry point or appears out of scope,
+        apply scope-enforcement: push back respectfully and offer to create a new ticket instead.
+      </action>
+    </actions>
+    <on-success>Proceed to TICKET_AND_BRANCH_SETUP</on-success>
+    <on-failure>Stop and ask the human to clarify their request</on-failure>
+  </phase>
 
-    <entry name="EXISTING_TICKET">
-      A beads ticket already exists (the human says "work on KAN-29b" or the orchestrator picks one from "bd ready").
-      <action>Run "bd show {id}" to read the ticket, then proceed to PLANNING.</action>
-    </entry>
+  <phase name="TICKET_AND_BRANCH_SETUP" order="2">
+    <actor>Orchestrator (reasoning tier)</actor>
+    <actions>
 
-    <entry name="SPEC_FILE">
-      The human points to a spec file or provides a large feature description
-      that needs to be broken into multiple tickets before work can begin.
-      <actions>
-        <action>Read the spec file</action>
-        <action>Create an epic ticket: bd create --type epic --title "..." --description "..."</action>
-        <action>
-          Decompose the spec into individual feature/task tickets.
-          Do NOT create dependencies between children and the epic — the epic is a tracking
-          container, not a blocker.
-        </action>
-        <action>
-          Establish dependencies between child tickets where ordering matters:
-          bd dep add {later-ticket} {earlier-ticket}
-        </action>
-        <action>HUMAN_GATE: Present the full ticket breakdown for approval (see human-gate behavior)</action>
-        <action>Pick the first ready ticket (bd ready) and proceed to PLANNING</action>
-      </actions>
-    </entry>
+      <!-- EXISTING_TICKET path -->
+      <action entry="EXISTING_TICKET">
+        Run "bd show {id}" to read the ticket and confirm it is understood.
+      </action>
 
-    <entry name="AD_HOC_REQUEST">
-      The human gives an instruction directly (e.g. "add a logout button").
-      This is NOT a ticket yet.
-      <actions>
-        <action>Create a beads ticket: bd create --type feature|bug|task --title "..." --description "..."</action>
-        <action>Confirm with the human: "Created {ticket-id}: {title}. Proceeding."</action>
-        <action>Proceed to PLANNING with the new ticket</action>
-      </actions>
-      <rule>
+      <!-- SPEC_FILE path -->
+      <action entry="SPEC_FILE">Read the spec file in full.</action>
+      <action entry="SPEC_FILE">
+        Create an epic ticket: bd create --type epic --title "..." --description "..."
+      </action>
+      <action entry="SPEC_FILE">
+        Decompose the spec into individual feature/task tickets.
+        Do NOT create dependencies between children and the epic — the epic is a tracking
+        container, not a blocker.
+      </action>
+      <action entry="SPEC_FILE">
+        Establish dependencies between child tickets where ordering matters:
+        bd dep add {later-ticket} {earlier-ticket}
+      </action>
+
+      <!-- AD_HOC_REQUEST path -->
+      <action entry="AD_HOC_REQUEST">
+        Create a beads ticket: bd create --type feature|bug|task --title "..." --description "..."
         Never implement an ad-hoc request without a ticket. If the human insists on skipping,
         explain that every change must be tracked and push back respectfully.
-      </rule>
-    </entry>
+      </action>
+      <action entry="AD_HOC_REQUEST">
+        Confirm with the human: "Created {ticket-id}: {title}. Proceeding."
+      </action>
 
-  </entry-points>
+      <!-- Branching strategy selection — all paths -->
+      <action>
+        Determine branching strategy using the rules from git-with-beads:
+        - SPEC_FILE entry → FEATURE_BRANCHING (always)
+        - EXISTING_TICKET with type "epic" → FEATURE_BRANCHING
+        - EXISTING_TICKET with any other type → TRUNK_BASED
+        - AD_HOC_REQUEST → TRUNK_BASED (unless planning reveals it should be an epic)
+      </action>
 
-  <branching-strategy-selection>
-    The orchestrator determines the strategy here, using the rules from git-with-beads:
-    - SPEC_FILE entry → FEATURE_BRANCHING (always)
-    - EXISTING_TICKET with type "epic" → FEATURE_BRANCHING
-    - EXISTING_TICKET with any other type → TRUNK_BASED
-    - AD_HOC_REQUEST → TRUNK_BASED (unless planning reveals it should be an epic)
-  </branching-strategy-selection>
+    </actions>
+    <on-success entry="EXISTING_TICKET">Proceed to PLANNING</on-success>
+    <on-success entry="AD_HOC_REQUEST">Proceed to PLANNING</on-success>
+    <on-success entry="SPEC_FILE">Proceed to SPEC_FILE_APPROVAL</on-success>
+    <on-failure>Stop and report the failure to the human before continuing</on-failure>
+  </phase>
+
+  <phase name="SPEC_FILE_APPROVAL" order="3">
+    <actor>Orchestrator (reasoning tier)</actor>
+    <actions>
+      <action>
+        Present the full ticket breakdown to the human for approval (see human-gate behavior).
+        Include: epic ticket ID, all child ticket IDs and titles, dependency ordering, and
+        selected branching strategy.
+      </action>
+      <action>Wait for explicit human approval before proceeding.</action>
+    </actions>
+    <on-success>Pick the first ready ticket (bd ready) and proceed to PLANNING</on-success>
+    <on-failure>Stop and report the failure to the human</on-failure>
+    <on-rejection>Return to TICKET_AND_BRANCH_SETUP to revise the ticket breakdown based on human feedback, then re-present</on-rejection>
+  </phase>
 
 </lifecycle>

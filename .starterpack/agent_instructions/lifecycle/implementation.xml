@@ -15,15 +15,15 @@
   <loop>
     <!--
       LAUNCH → DISPATCH → MONITOR → EVALUATE → HUMAN_GATE → PUSH → HANDOFF
-                  ▲           │
-                  │  failure   │
-                  └─ ESCALATE ─┘
-                       │
+                  ▲           │                     │
+                  │  failure   │                     │ rejection
+                  └─ ESCALATE ─┘                     └──────────────┘
+                       │                             (loop back to DISPATCH)
                        │ stuck → human
     -->
 
     <phase name="LAUNCH" order="1">
-      <actor>Orchestrator (acting as Agent Team lead)</actor>
+      <actor>Orchestrator (reasoning tier, acting as Agent Team lead)</actor>
       <actions>
         <action>Read the approved plan, ticket ID, ticket issue_type, and branching strategy</action>
         <action>
@@ -33,10 +33,11 @@
         </action>
         <action>Create the Agent Team for this implementation cycle</action>
       </actions>
+      <on-success>Proceed to DISPATCH</on-success>
     </phase>
 
     <phase name="DISPATCH" order="2">
-      <actor>Orchestrator (Team Lead)</actor>
+      <actor>Orchestrator (reasoning tier, Team Lead)</actor>
       <actions>
         <action>Read the plan's sub-task list and dependency ordering</action>
         <action>
@@ -56,42 +57,55 @@
           - The relevant behavior files for their role
         </action>
       </actions>
+      <on-success>Proceed to MONITOR</on-success>
     </phase>
 
     <phase name="MONITOR" order="3">
-      <actor>Orchestrator (Team Lead)</actor>
+      <actor>Orchestrator (reasoning tier, Team Lead)</actor>
       <actions>
         <action>Receive messages from teammates as they complete or encounter issues</action>
         <action>Track: success/failure, files modified, commits made</action>
         <action>For failed teammates, collect the structured failure report (escalation behavior)</action>
       </actions>
+      <on-success>Proceed to EVALUATE</on-success>
     </phase>
 
     <phase name="EVALUATE" order="4">
-      <actor>Orchestrator (Team Lead)</actor>
+      <actor>Orchestrator (reasoning tier, Team Lead)</actor>
+      <!-- All evaluation logic is conditional on success or failure; no unconditional actions. -->
+      <actions>
+        <action>Assess the outcome of every teammate: determine whether each sub-task completed successfully or produced a failure report</action>
+        <action>Classify any failures as TECHNICAL (logic bug, command error, test failure, syntax issue) or REQUIREMENTS (impossible plan, unclear spec, wrong direction)</action>
+      </actions>
       <on-success>All teammates succeeded → proceed to HUMAN_GATE</on-success>
       <on-failure>
-        <action>Review the failure context and classify the failure type</action>
-        <action>
-          TECHNICAL FAILURE (logic bug, command error, test failure, syntax issue):
-          Spawn an Opus teammate with the failure context to attempt resolution.
-          If resolved → loop to DISPATCH for remaining work.
-          If Opus also fails → present to human.
-        </action>
-        <action>
-          REQUIREMENTS FAILURE (impossible plan, unclear spec, wrong direction):
-          Present the failure to the human for clarification.
-        </action>
+        <actions>
+          <action>Review the failure context and classify the failure type</action>
+          <action>
+            TECHNICAL FAILURE (logic bug, command error, test failure, syntax issue):
+            Spawn an Opus teammate with the failure context to attempt resolution.
+            If resolved → loop to DISPATCH for remaining work.
+            If Opus also fails → present to human.
+          </action>
+          <action>
+            REQUIREMENTS FAILURE (impossible plan, unclear spec, wrong direction):
+            Present the failure to the human for clarification.
+          </action>
+        </actions>
       </on-failure>
     </phase>
 
     <phase name="HUMAN_GATE" order="5">
-      <action>Present implementation results for approval (see human-gate behavior, context: IMPLEMENTATION_REVIEW)</action>
+      <actor>Orchestrator (reasoning tier)</actor>
+      <actions>
+        <action>Present implementation results for approval (see human-gate behavior, context: IMPLEMENTATION_REVIEW)</action>
+      </actions>
+      <on-success>Proceed to PUSH</on-success>
       <on-rejection>Pass feedback to teammates or spawn new teammates → loop to DISPATCH</on-rejection>
     </phase>
 
     <phase name="PUSH" order="6">
-      <actor>Orchestrator (Team Lead)</actor>
+      <actor>Orchestrator (reasoning tier, Team Lead)</actor>
       <actions>
         <action>Push the branch to remote: git push -u origin {branch-name}</action>
         <action>Confirm the push succeeded before transitioning</action>
@@ -100,12 +114,21 @@
         This is the only push during implementation. Teammates never push directly.
         The push happens after human approval so unapproved work never reaches the remote.
       </note>
+      <on-success>Proceed to HANDOFF</on-success>
     </phase>
 
     <phase name="HANDOFF" order="7">
-      TRUNK_BASED: proceed to DOCS.
-      FEATURE_BRANCHING: close the child ticket, pick the next ready child,
-      or proceed to DOCS if all children are complete.
+      <actor>Orchestrator (reasoning tier, Team Lead)</actor>
+      <actions>
+        <action>
+          TRUNK_BASED: proceed to DOCS.
+        </action>
+        <action>
+          FEATURE_BRANCHING: close the child ticket, pick the next ready child,
+          or proceed to DOCS if all children are complete.
+        </action>
+      </actions>
+      <on-success>Lifecycle complete. Proceed to DOCS.</on-success>
     </phase>
 
   </loop>

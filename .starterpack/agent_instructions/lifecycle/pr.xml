@@ -24,10 +24,17 @@
         <action>Review the full diff against main</action>
         <action>Draft the PR using the pr-template behavior</action>
       </actions>
+      <on-success>Proceed to HUMAN_GATE</on-success>
+      <on-failure>Stop and report failure to human</on-failure>
     </phase>
 
     <phase name="HUMAN_GATE" order="2">
-      <action>Present draft PR for approval (see human-gate behavior, context: PR_REVIEW)</action>
+      <actor>Orchestrator (reasoning tier)</actor>
+      <actions>
+        <action>Present draft PR for approval (see human-gate behavior, context: PR_REVIEW)</action>
+      </actions>
+      <on-success>Proceed to SUBMIT</on-success>
+      <on-failure>Stop and report failure to human</on-failure>
       <on-rejection>Feed corrections back to PR Drafter → loop to PREPARE</on-rejection>
     </phase>
 
@@ -44,10 +51,17 @@
         <action>Commit the beads closure on the branch before the PR merges</action>
         <action>Report the PR URL back to the orchestrator</action>
       </actions>
+      <on-success>Proceed to HANDOFF</on-success>
+      <on-failure>Stop and report failure to human</on-failure>
     </phase>
 
     <phase name="HANDOFF" order="4">
-      Ticket complete. PR created and ticket closed. Report PR URL to human.
+      <actor>Orchestrator (reasoning tier)</actor>
+      <actions>
+        <action>Ticket complete. PR created and ticket closed. Report PR URL to human.</action>
+      </actions>
+      <on-success>Lifecycle complete</on-success>
+      <on-failure>Stop and report failure to human</on-failure>
     </phase>
 
   </loop>
