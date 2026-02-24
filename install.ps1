@@ -87,6 +87,7 @@ param(
         ".starterpack/agent_instructions/lifecycle/pr.xml"
         ".starterpack/agent_instructions/lifecycle/authoring-behaviors-and-lifecycles.xml"
         ".starterpack/beads_sync.md"
+        ".starterpack/hooks/pre-commit"
         ".starterpack/hooks/post-merge"
         ".github/workflows/beads-sync.yml"
         ".github/scripts/beads-sync.sh"
@@ -182,7 +183,15 @@ param(
             if (-not (Get-Command "bd" -ErrorAction SilentlyContinue)) {
                 Write-Host ""
                 Write-Host "  ERROR: -InitBeads was specified but 'bd' was not found on PATH." -ForegroundColor Red
-                Write-Host "  Install Beads from: https://github.com/cosmix/beads" -ForegroundColor Yellow
+                Write-Host "  Install Beads from: https://github.com/steveyegge/beads" -ForegroundColor Yellow
+                Write-Host ""
+                return
+            }
+            if (-not (Get-Command "dolt" -ErrorAction SilentlyContinue)) {
+                Write-Host ""
+                Write-Host "  ERROR: -InitBeads was specified but 'dolt' was not found on PATH." -ForegroundColor Red
+                Write-Host "  Beads v0.56+ requires Dolt as its database backend." -ForegroundColor Yellow
+                Write-Host "  Install Dolt from: https://github.com/dolthub/dolt" -ForegroundColor Yellow
                 Write-Host ""
                 return
             }
@@ -409,11 +418,19 @@ param(
         $warnings = @()
 
         if (-not (Get-Command "bd" -ErrorAction SilentlyContinue)) {
-            $warnings += "Beads CLI (bd) not found. Install from: https://github.com/cosmix/beads"
+            $warnings += "Beads CLI (bd) not found. Install from: https://github.com/steveyegge/beads"
+        }
+
+        if (-not (Get-Command "dolt" -ErrorAction SilentlyContinue)) {
+            $warnings += "Dolt not found. Beads v0.56+ uses Dolt as its database backend. Install from: https://github.com/dolthub/dolt"
         }
 
         if (-not (Get-Command "claude" -ErrorAction SilentlyContinue)) {
             $warnings += "Claude Code CLI not found. Install from: https://docs.anthropic.com/en/docs/claude-code"
+        }
+
+        if (-not (Get-Command "jq" -ErrorAction SilentlyContinue) -and -not (Get-Command "python3" -ErrorAction SilentlyContinue)) {
+            $warnings += "Neither jq nor python3 found. The pre-commit hook needs one of these to flush beads issues to JSONL for GitHub sync."
         }
 
         if (-not (Test-Path ".beads/config.yaml") -and -not (Test-Path ".beads/metadata.json")) {
