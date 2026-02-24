@@ -320,9 +320,16 @@ param(
             if (-not (Test-Path ".git")) {
                 Write-Host "  [skip] Not a git repository - skipping commit" -ForegroundColor Yellow
             } else {
+                # Temporarily relax error preference for git commands (git writes
+                # warnings like CRLF normalization to stderr, which PowerShell
+                # converts to terminating errors under $ErrorActionPreference=Stop).
+                $prevErrorPref = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+
                 # Check for pre-existing staged changes
                 $priorStaged = git diff --cached --name-only 2>$null
                 if ($priorStaged) {
+                    $ErrorActionPreference = $prevErrorPref
                     Write-Host ""
                     Write-Host "  [warn] Skipping auto-commit: you have staged changes that predate this install." -ForegroundColor Yellow
                     Write-Host "         Commit or unstage your existing changes first, then re-run." -ForegroundColor Yellow
@@ -332,20 +339,30 @@ param(
                     Write-Host "           git commit -m 'chore: $commitAction starterpack $resolvedVersion'" -ForegroundColor Cyan
                 } else {
                     if ($DryRun) {
+                        $ErrorActionPreference = $prevErrorPref
                         $commitAction = if ($currentVersion) { "upgrade" } else { "install" }
                         Write-Host "[DRY RUN] Would commit: chore: $commitAction starterpack $resolvedVersion"
                     } else {
                         # Stage only specific installed files
-                        $filesToStage = @("CLAUDE.md", ".starterpack-version", ".starterpack/")
+                        $filesToStage = @(
+                            "CLAUDE.md",
+                            ".starterpack-version",
+                            ".starterpack/",
+                            ".gitattributes",
+                            ".claude/",
+                            ".github/"
+                        )
                         if (Test-Path ".beads/") { $filesToStage += ".beads/" }
                         foreach ($f in $filesToStage) {
                             if (Test-Path $f) { git add -- $f 2>$null }
                         }
 
                         $staged = git diff --cached --name-only 2>$null
+                        $ErrorActionPreference = $prevErrorPref
+
                         if ($staged) {
                             $commitAction = if ($currentVersion) { "upgrade starterpack to $resolvedVersion" } else { "install starterpack $resolvedVersion" }
-                            git commit -m "chore: $commitAction"
+                            git commit -m "chore: $commitAction" 2>$null
                             if ($LASTEXITCODE -eq 0) {
                                 Write-Host "  [ok] Committed: chore: $commitAction" -ForegroundColor Green
                             } else {
