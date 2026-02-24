@@ -55,4 +55,11 @@
     Behaviors: pr-template, human-gate, response-format
   </phase>
 
+  <phase name="AUTHORING_BEHAVIORS_AND_LIFECYCLES" file="lifecycle/authoring-behaviors-and-lifecycles.xml" on-demand="true">
+    On-demand lifecycle for creating new behaviors and lifecycles. Drafts each file
+    with strict rules, then reviews for rule violations, then reviews for contradictions
+    and redundancies.
+    Behaviors: create-behavior, create-lifecycle
+  </phase>
+
 </lifecycle-manifest>
