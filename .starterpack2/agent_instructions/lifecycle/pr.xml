@@ -6,6 +6,8 @@
   </summary>
 
   <uses-behavior name="pr-template" />
+  <uses-behavior name="human-gate" context="PR/PR_REVIEW" />
+  <uses-behavior name="response-format" lifecycle="PR" />
 
   <loop>
     <!--
@@ -25,9 +27,8 @@
     </phase>
 
     <phase name="HUMAN_GATE" order="2">
-      <actor>Orchestrator presents the draft PR to the human</actor>
-      <gate>BLOCKED — Do not proceed. Human approval required.</gate>
-      <note>Human may edit the title, body, or testing plan before approving.</note>
+      <action>Present draft PR for approval (see human-gate behavior, context: PR_REVIEW)</action>
+      <on-rejection>Feed corrections back to PR Drafter → loop to PREPARE</on-rejection>
     </phase>
 
     <phase name="SUBMIT" order="3">

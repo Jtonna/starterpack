@@ -6,6 +6,8 @@
   </summary>
 
   <uses-behavior name="sub-task-tracking" />
+  <uses-behavior name="human-gate" context="PLANNING/PLAN_APPROVAL" />
+  <uses-behavior name="response-format" lifecycle="PLANNING" />
 
   <loop>
     <!--
@@ -54,14 +56,8 @@
     </phase>
 
     <phase name="HUMAN_GATE" order="4">
-      <actor>Orchestrator presents the plan to the human</actor>
-      <presents>
-        <item>The sub-task list with complexity ratings</item>
-        <item>Dependency ordering</item>
-        <item>Any concerns raised by the reviewer</item>
-      </presents>
-      <gate>BLOCKED — Do not proceed. Human approval required before implementation.</gate>
-      <on-rejection>Orchestrator feeds corrections back to the Planner → loop to DRAFT</on-rejection>
+      <action>Present the plan for approval (see human-gate behavior, context: PLAN_APPROVAL)</action>
+      <on-rejection>Feed corrections back to the Planner → loop to DRAFT</on-rejection>
     </phase>
 
     <phase name="HANDOFF" order="5">

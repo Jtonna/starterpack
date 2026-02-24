@@ -9,6 +9,8 @@
   <uses-behavior name="escalation" />
   <uses-behavior name="scope-enforcement" />
   <uses-behavior name="sub-task-tracking" />
+  <uses-behavior name="human-gate" context="IMPLEMENTATION/IMPLEMENTATION_REVIEW" />
+  <uses-behavior name="response-format" lifecycle="IMPLEMENTATION" />
 
   <loop>
     <!--
@@ -84,15 +86,8 @@
     </phase>
 
     <phase name="HUMAN_GATE" order="5">
-      <actor>Orchestrator presents to the human</actor>
-      <presents>
-        <item>Summary of what was implemented</item>
-        <item>Files modified</item>
-        <item>How to verify/test the changes</item>
-        <item>Any concerns raised during implementation</item>
-      </presents>
-      <gate>BLOCKED — Do not proceed. Human approval required.</gate>
-      <on-rejection>Orchestrator passes feedback to teammates or spawns new teammates → loop to DISPATCH</on-rejection>
+      <action>Present implementation results for approval (see human-gate behavior, context: IMPLEMENTATION_REVIEW)</action>
+      <on-rejection>Pass feedback to teammates or spawn new teammates → loop to DISPATCH</on-rejection>
     </phase>
 
     <phase name="PUSH" order="6">

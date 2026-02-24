@@ -1,0 +1,70 @@
+<behavior name="human-gate">
+
+  <summary>
+    Defines what a human gate is and how to present information for human approval.
+    Each lifecycle customizes the gate with phase-specific details via the gate-context
+    attribute when referencing this behavior.
+  </summary>
+
+  <applies-to>orchestrator</applies-to>
+
+  <definition>
+    A HUMAN_GATE is a hard block in the lifecycle. The orchestrator MUST stop and wait
+    for explicit human approval before proceeding. No assumptions. No skipping.
+    The human's decision is final — approve, reject with feedback, or abort.
+  </definition>
+
+  <protocol>
+    <step order="1">Present the gate summary to the human (see gate-context per lifecycle)</step>
+    <step order="2">Clearly state: "BLOCKED — waiting for your approval to proceed."</step>
+    <step order="3">Wait for human response. Do not take any action until they respond.</step>
+    <step order="4">
+      On APPROVE: proceed to the next phase.
+      On REJECT: pass feedback to the relevant agents, loop back to the revision phase.
+      On ABORT: stop the lifecycle entirely, report status, preserve all work done so far.
+    </step>
+  </protocol>
+
+  <gate-contexts>
+    <!--
+      Each lifecycle defines what to present at its HUMAN_GATE. The orchestrator loads
+      this behavior once but uses the lifecycle-specific context when presenting.
+    -->
+
+    <context lifecycle="ENTRY" phase="SPEC_FILE_APPROVAL">
+      <present>Full ticket breakdown (epic + children with dependencies)</present>
+      <present>Estimated scope and ordering</present>
+      <question>Approve this ticket breakdown to begin work?</question>
+    </context>
+
+    <context lifecycle="PLANNING" phase="PLAN_APPROVAL">
+      <present>Sub-task list with complexity ratings (light/standard/complex)</present>
+      <present>Dependency ordering between sub-tasks</present>
+      <present>Concerns raised by the plan reviewer</present>
+      <question>Approve this plan for implementation?</question>
+    </context>
+
+    <context lifecycle="IMPLEMENTATION" phase="IMPLEMENTATION_REVIEW">
+      <present>Summary of what was implemented</present>
+      <present>Files modified</present>
+      <present>How to verify/test the changes</present>
+      <present>Any concerns raised during implementation</present>
+      <question>Approve these changes? They will be pushed to remote after approval.</question>
+    </context>
+
+    <context lifecycle="DOCS" phase="DOC_REVIEW">
+      <present>List of documentation files that need updates</present>
+      <present>Findings with severity ratings (must-fix, should-fix, nice-to-have)</present>
+      <present>Suggested fixes for each finding</present>
+      <question>Which documentation updates should be applied?</question>
+    </context>
+
+    <context lifecycle="PR" phase="PR_REVIEW">
+      <present>Draft PR title and body</present>
+      <present>Summary, changes table, testing plan</present>
+      <note>Human may edit the title, body, or testing plan before approving.</note>
+      <question>Approve this PR for submission?</question>
+    </context>
+  </gate-contexts>
+
+</behavior>

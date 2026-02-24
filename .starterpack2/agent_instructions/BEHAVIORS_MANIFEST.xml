@@ -42,4 +42,16 @@
     Assign to: pr-drafter
   </behavior>
 
+  <behavior name="human-gate" file="behaviors/human-gate.xml">
+    Defines what a human gate is, the approval protocol (approve/reject/abort),
+    and lifecycle-specific gate contexts defining what to present at each gate.
+    Assign to: orchestrator
+  </behavior>
+
+  <behavior name="response-format" file="behaviors/response-format.xml">
+    Standard response format for all agents. Every message prefixed with
+    LIFECYCLE: {name} // {message} so humans can track active phases.
+    Assign to: orchestrator, all agents
+  </behavior>
+
 </behaviors-manifest>

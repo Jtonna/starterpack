@@ -7,6 +7,8 @@
 
   <uses-behavior name="git-with-beads" />
   <uses-behavior name="scope-enforcement" />
+  <uses-behavior name="human-gate" context="ENTRY/SPEC_FILE_APPROVAL" />
+  <uses-behavior name="response-format" lifecycle="ENTRY" />
 
   <entry-points>
 
@@ -30,8 +32,7 @@
           Establish dependencies between child tickets where ordering matters:
           bd dep add {later-ticket} {earlier-ticket}
         </action>
-        <action>Present the full ticket breakdown to the human for approval</action>
-        <gate>BLOCKED — Human approval of the ticket breakdown required before starting any work.</gate>
+        <action>HUMAN_GATE: Present the full ticket breakdown for approval (see human-gate behavior)</action>
         <action>Pick the first ready ticket (bd ready) and proceed to PLANNING</action>
       </actions>
     </entry>

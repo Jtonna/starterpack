@@ -70,6 +70,8 @@ param(
         ".starterpack2/agent_instructions/behaviors/sub-task-tracking.xml"
         ".starterpack2/agent_instructions/behaviors/documentation-structure.xml"
         ".starterpack2/agent_instructions/behaviors/pr-template.xml"
+        ".starterpack2/agent_instructions/behaviors/human-gate.xml"
+        ".starterpack2/agent_instructions/behaviors/response-format.xml"
         ".starterpack2/agent_instructions/lifecycle/entry.xml"
         ".starterpack2/agent_instructions/lifecycle/planning.xml"
         ".starterpack2/agent_instructions/lifecycle/implementation.xml"

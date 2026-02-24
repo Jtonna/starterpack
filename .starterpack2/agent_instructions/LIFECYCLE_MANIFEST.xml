@@ -7,6 +7,12 @@
 
   <sequence>ENTRY → PLANNING → IMPLEMENTATION → DOCS → PR</sequence>
 
+  <global-behaviors>
+    These behaviors are used by ALL lifecycle phases:
+    - human-gate: Defines the approval protocol at every HUMAN_GATE
+    - response-format: Every response prefixed with LIFECYCLE: {name} // {message}
+  </global-behaviors>
+
   <rules>
     <rule>Never skip a phase</rule>
     <rule>Never combine phases</rule>
@@ -21,32 +27,32 @@
   <phase name="ENTRY" file="lifecycle/entry.xml">
     Routes incoming work. Three entry points: existing ticket, spec file, or ad-hoc request.
     Creates tickets if needed. Selects branching strategy (trunk-based or feature branching).
-    Behaviors: git-with-beads, scope-enforcement
+    Behaviors: git-with-beads, scope-enforcement, human-gate, response-format
   </phase>
 
   <phase name="PLANNING" file="lifecycle/planning.xml">
     Explores codebase and docs. Drafts implementation plan with sub-tasks and complexity ratings.
     Automated plan review. Human approval gate before any code is written.
-    Behaviors: sub-task-tracking
+    Behaviors: sub-task-tracking, human-gate, response-format
   </phase>
 
   <phase name="IMPLEMENTATION" file="lifecycle/implementation.xml">
     Creates branch. Spawns implementation teammates via Agent Teams. Monitors progress.
     Escalates failures (technical → Opus, requirements → human). Human approval gate.
     Pushes to remote after approval.
-    Behaviors: git-with-beads, escalation, scope-enforcement, sub-task-tracking
+    Behaviors: git-with-beads, escalation, scope-enforcement, sub-task-tracking, human-gate, response-format
   </phase>
 
   <phase name="DOCS" file="lifecycle/docs.xml">
     Scouts documentation for staleness. Audits affected files if needed.
     Human picks which updates to apply. Doc writers apply approved changes.
-    Behaviors: documentation-structure
+    Behaviors: documentation-structure, human-gate, response-format
   </phase>
 
   <phase name="PR" file="lifecycle/pr.xml">
     Drafts pull request with summary, changes table, and testing plan.
     Human approval gate. Submitter pushes, creates PR, closes ticket.
-    Behaviors: pr-template
+    Behaviors: pr-template, human-gate, response-format
   </phase>
 
 </lifecycle-manifest>

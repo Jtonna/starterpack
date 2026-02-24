@@ -1,0 +1,37 @@
+<behavior name="response-format">
+
+  <summary>
+    Defines the standard response format for all agents during orchestration.
+    Every message must be prefixed with the current lifecycle context so humans
+    can track what phase is active during complex orchestrations.
+  </summary>
+
+  <applies-to>orchestrator, all agents</applies-to>
+
+  <format>
+    Every response during conversation or execution MUST begin with a lifecycle prefix:
+
+    LIFECYCLE: {lifecycle-name} // {message}
+
+    Examples:
+      LIFECYCLE: ENTRY // Created ticket sp-04a: "Add logout button". Proceeding to PLANNING.
+      LIFECYCLE: PLANNING // Launching explorer agent to build codebase context.
+      LIFECYCLE: IMPLEMENTATION // 3/5 teammates complete. Waiting on sub-task 4 (auth module).
+      LIFECYCLE: DOCS // Doc scout found 2 files needing updates. Launching auditors.
+      LIFECYCLE: PR // Draft PR ready for review.
+
+    When blocked at a human gate:
+      LIFECYCLE: {lifecycle-name} // BLOCKED — waiting for your approval to proceed.
+
+    When transitioning between lifecycles:
+      LIFECYCLE: {from} → {to} // Transitioning from PLANNING to IMPLEMENTATION.
+  </format>
+
+  <rules>
+    <rule>Every single response uses this format — no exceptions</rule>
+    <rule>The lifecycle name must match the phase currently being executed</rule>
+    <rule>Sub-agents reporting back to the orchestrator include their role in the message</rule>
+    <rule>If work hasn't entered a lifecycle yet (e.g. initial greeting), use LIFECYCLE: IDLE</rule>
+  </rules>
+
+</behavior>
