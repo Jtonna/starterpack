@@ -4,16 +4,11 @@ A plug-and-play AI agent orchestration setup for [Claude Code](https://docs.anth
 
 ## Why it exists
 
-If you've spent any time with AI agents writing code, you've probably hit these:
-
-- **Vibe coding**: agents ship code with no human review, subtle bugs compound over time
-- **Documentation drift**: the codebase evolves but docs don't, so future agent sessions work off stale info and things start breaking in weird ways
-- **Token burn**: Opus doing work that Haiku handles fine
-- **Lost context**: scattered commits with no traceability, agents forgetting what they were doing mid-session
-
 One agent making a small mistake is fine. A swarm of agents all making small mistakes at the same time is not.
 
-I've been running agent swarms since December in crude, rudimentary forms. Claude Code finally offers an official solution — not as powerful, but far more convenient. That said, swarms have fundamental workflow structure problems: assumptions cascade into bad decisions, and as the gastown and ralph wiggums era showed, token burn is inefficient and context usage gets sloppy. This is my attempt at a solution I can actually live with. It reduces cascading failures, enforces stricter workflows based on my personal preferences, keeps the human in the loop, and provides enough pushback to counter ADHD vibe coding. It also solves some project management headaches by using Beads and syncing tickets to GitHub Issues.
+I've been running agent swarms since December in crude, rudimentary forms. Claude Code finally offers an official solution, not as powerful, but far more convenient. That said, swarms have fundamental workflow structure problems; assumptions cascade into bad decisions, and as the gastown and ralph wiggums era showed, token burn is inefficient and context usage gets sloppy. This is my attempt at a solution I can actually live with. It reduces cascading failures, enforces stricter workflows based on my personal preferences, keeps the human in the loop, and provides enough pushback to counter ADHD vibe coding. It also solves some project management headaches by using Beads and syncing tickets to GitHub Issues.
+
+Arguably the most important part is a structured workflow to create new behaviors and lifecycles, something ive had issues with across various solutions.
 
 ## Installing
 
