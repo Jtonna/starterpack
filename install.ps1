@@ -267,7 +267,38 @@ param(
             }
         }
 
-        # Step 9: Post-install checks
+        # Step 9: Auto-commit installed files
+        if (Test-Path (Join-Path $PWD ".git")) {
+            Write-Host ""
+            Write-Host "Committing starterpack files..." -ForegroundColor Cyan
+
+            # Stage manifest files + version file (only files that exist on disk)
+            $filesToStage = @($VersionFile) + $Manifest
+            $staged = 0
+            foreach ($file in $filesToStage) {
+                $filePath = Join-Path $PWD ($file -replace "/", [IO.Path]::DirectorySeparatorChar)
+                if (Test-Path $filePath) {
+                    git add -- $file 2>$null
+                    $staged++
+                }
+            }
+
+            # Only commit if there are staged changes
+            $status = git diff --cached --name-only 2>$null
+            if ($status) {
+                $action = if ($currentVersion) { "upgrade" } else { "install" }
+                git commit -m "chore: $action starterpack $resolvedVersion" 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "  [ok] Committed starterpack files ($staged staged)" -ForegroundColor Green
+                } else {
+                    Write-Host "  [warn] git commit failed — you may need to commit manually" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "  [ok] No changes to commit (files already up to date)" -ForegroundColor Green
+            }
+        }
+
+        # Step 10: Post-install checks
         Write-Host ""
         Write-Host "Installed starterpack $resolvedVersion ($copied files)" -ForegroundColor Green
         if ($skipped -gt 0) {
