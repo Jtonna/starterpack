@@ -1,0 +1,118 @@
+<lifecycle name="IMPLEMENTATION">
+
+  <summary>
+    Executes the approved plan. The orchestrator acts as Agent Team lead, spawning
+    implementation teammates and coordinating their work. Uses Agent Teams (experimental).
+  </summary>
+
+  <uses-behavior name="git-with-beads" />
+  <uses-behavior name="escalation" />
+  <uses-behavior name="scope-enforcement" />
+  <uses-behavior name="sub-task-tracking" />
+
+  <loop>
+    <!--
+      LAUNCH → DISPATCH → MONITOR → EVALUATE → HUMAN_GATE → PUSH → HANDOFF
+                  ▲           │
+                  │  failure   │
+                  └─ ESCALATE ─┘
+                       │
+                       │ stuck → human
+    -->
+
+    <phase name="LAUNCH" order="1">
+      <actor>Orchestrator (acting as Agent Team lead)</actor>
+      <actions>
+        <action>Read the approved plan, ticket ID, ticket issue_type, and branching strategy</action>
+        <action>
+          Branch handling (rules from git-with-beads behavior):
+          TRUNK_BASED: Create a new branch using the issue-type → branch-prefix mapping.
+          FEATURE_BRANCHING: Create or checkout the epic branch (EPIC/epic-id).
+        </action>
+        <action>Create the Agent Team for this implementation cycle</action>
+      </actions>
+    </phase>
+
+    <phase name="DISPATCH" order="2">
+      <actor>Orchestrator (Team Lead)</actor>
+      <actions>
+        <action>Read the plan's sub-task list and dependency ordering</action>
+        <action>
+          For each sub-task, determine the model tier using the planner's complexity rating
+          (see AGENT_TEAMS.xml dispatch-override):
+          - light → haiku
+          - standard → sonnet
+          - complex → opus
+        </action>
+        <action>Spawn independent sub-tasks as teammates in parallel</action>
+        <action>Spawn dependent sub-tasks sequentially after their dependencies complete</action>
+        <action>
+          Each teammate receives:
+          - The sub-task description, files to modify, acceptance criteria
+          - The branch to commit to
+          - The ticket ID for commit messages
+          - The relevant behavior files for their role
+        </action>
+      </actions>
+    </phase>
+
+    <phase name="MONITOR" order="3">
+      <actor>Orchestrator (Team Lead)</actor>
+      <actions>
+        <action>Receive messages from teammates as they complete or encounter issues</action>
+        <action>Track: success/failure, files modified, commits made</action>
+        <action>For failed teammates, collect the structured failure report (escalation behavior)</action>
+      </actions>
+    </phase>
+
+    <phase name="EVALUATE" order="4">
+      <actor>Orchestrator (Team Lead)</actor>
+      <on-success>All teammates succeeded → proceed to HUMAN_GATE</on-success>
+      <on-failure>
+        <action>Review the failure context and classify the failure type</action>
+        <action>
+          TECHNICAL FAILURE (logic bug, command error, test failure, syntax issue):
+          Spawn an Opus teammate with the failure context to attempt resolution.
+          If resolved → loop to DISPATCH for remaining work.
+          If Opus also fails → present to human.
+        </action>
+        <action>
+          REQUIREMENTS FAILURE (impossible plan, unclear spec, wrong direction):
+          Present the failure to the human for clarification.
+        </action>
+      </on-failure>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="5">
+      <actor>Orchestrator presents to the human</actor>
+      <presents>
+        <item>Summary of what was implemented</item>
+        <item>Files modified</item>
+        <item>How to verify/test the changes</item>
+        <item>Any concerns raised during implementation</item>
+      </presents>
+      <gate>BLOCKED — Do not proceed. Human approval required.</gate>
+      <on-rejection>Orchestrator passes feedback to teammates or spawns new teammates → loop to DISPATCH</on-rejection>
+    </phase>
+
+    <phase name="PUSH" order="6">
+      <actor>Orchestrator (Team Lead)</actor>
+      <actions>
+        <action>Push the branch to remote: git push -u origin {branch-name}</action>
+        <action>Confirm the push succeeded before transitioning</action>
+      </actions>
+      <note>
+        This is the only push during implementation. Teammates never push directly.
+        The push happens after human approval so unapproved work never reaches the remote.
+      </note>
+    </phase>
+
+    <phase name="HANDOFF" order="7">
+      TRUNK_BASED: proceed to DOCS.
+      FEATURE_BRANCHING: close the child ticket, pick the next ready child,
+      or proceed to DOCS if all children are complete.
+    </phase>
+
+  </loop>
+
+</lifecycle>

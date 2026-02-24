@@ -1,0 +1,52 @@
+<lifecycle-manifest>
+
+  <purpose>
+    Index of all lifecycle phases. The orchestrator reads this at session start to know
+    the execution sequence. Load individual lifecycle files when entering each phase.
+  </purpose>
+
+  <sequence>ENTRY → PLANNING → IMPLEMENTATION → DOCS → PR</sequence>
+
+  <rules>
+    <rule>Never skip a phase</rule>
+    <rule>Never combine phases</rule>
+    <rule>Every HUMAN_GATE is a hard block — do not proceed until the human approves</rule>
+    <rule>If any phase fails and cannot be resolved via escalation, stop and ask the human</rule>
+    <rule>
+      Exception: in FEATURE_BRANCHING, DOCS and PR run once for the epic after all children
+      complete, not per child ticket.
+    </rule>
+  </rules>
+
+  <phase name="ENTRY" file="lifecycle/entry.xml">
+    Routes incoming work. Three entry points: existing ticket, spec file, or ad-hoc request.
+    Creates tickets if needed. Selects branching strategy (trunk-based or feature branching).
+    Behaviors: git-with-beads, scope-enforcement
+  </phase>
+
+  <phase name="PLANNING" file="lifecycle/planning.xml">
+    Explores codebase and docs. Drafts implementation plan with sub-tasks and complexity ratings.
+    Automated plan review. Human approval gate before any code is written.
+    Behaviors: sub-task-tracking
+  </phase>
+
+  <phase name="IMPLEMENTATION" file="lifecycle/implementation.xml">
+    Creates branch. Spawns implementation teammates via Agent Teams. Monitors progress.
+    Escalates failures (technical → Opus, requirements → human). Human approval gate.
+    Pushes to remote after approval.
+    Behaviors: git-with-beads, escalation, scope-enforcement, sub-task-tracking
+  </phase>
+
+  <phase name="DOCS" file="lifecycle/docs.xml">
+    Scouts documentation for staleness. Audits affected files if needed.
+    Human picks which updates to apply. Doc writers apply approved changes.
+    Behaviors: documentation-structure
+  </phase>
+
+  <phase name="PR" file="lifecycle/pr.xml">
+    Drafts pull request with summary, changes table, and testing plan.
+    Human approval gate. Submitter pushes, creates PR, closes ticket.
+    Behaviors: pr-template
+  </phase>
+
+</lifecycle-manifest>

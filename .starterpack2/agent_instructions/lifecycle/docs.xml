@@ -1,0 +1,68 @@
+<lifecycle name="DOCS">
+
+  <summary>
+    Ensures documentation stays consistent with implementation changes.
+    Runs after every implementation cycle. May skip if no doc updates are needed.
+  </summary>
+
+  <uses-behavior name="documentation-structure" />
+
+  <loop>
+    <!--
+      SCOUT → (no changes → HANDOFF)
+            → (trivial → HUMAN_GATE → APPLY → HANDOFF)
+            → (changes needed → AUDIT → HUMAN_GATE → APPLY → HANDOFF)
+    -->
+
+    <phase name="SCOUT" order="1">
+      <actor>Orchestrator launches a Doc Scout agent (reasoning tier)</actor>
+      <actions>
+        <action>Review the git diff of changes made during implementation</action>
+        <action>Compare against existing documentation files</action>
+        <action>
+          Triage into one of three outcomes:
+          - NO_CHANGES_NEEDED: docs are already consistent → skip to HANDOFF
+          - TRIVIAL_CHANGE: minor wording fix, typo → skip AUDIT, go to HUMAN_GATE with the fix
+          - CHANGES_NEEDED: significant doc updates required → proceed to AUDIT
+        </action>
+      </actions>
+    </phase>
+
+    <phase name="AUDIT" order="2">
+      <actor>Orchestrator launches Doc Auditor agents (reasoning tier, one per affected file)</actor>
+      <actions>
+        <action>Each auditor reviews one documentation file against the implementation changes</action>
+        <action>
+          Produce structured findings:
+          - What needs to change
+          - Severity (must-fix, should-fix, nice-to-have)
+          - Suggested fix
+        </action>
+      </actions>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="3">
+      <actor>Orchestrator presents findings to the human</actor>
+      <presents>
+        <item>List of documentation files that need updates</item>
+        <item>Findings with severity ratings</item>
+        <item>Suggested fixes</item>
+      </presents>
+      <gate>BLOCKED — Do not proceed. Human picks which findings to apply.</gate>
+    </phase>
+
+    <phase name="APPLY" order="4">
+      <actor>Orchestrator launches Doc Writer agents (worker tier, one per approved file)</actor>
+      <actions>
+        <action>Apply the human-approved documentation updates</action>
+        <action>Commit changes with the ticket ID prefix</action>
+      </actions>
+    </phase>
+
+    <phase name="HANDOFF" order="5">
+      Proceed to PR.
+    </phase>
+
+  </loop>
+
+</lifecycle>

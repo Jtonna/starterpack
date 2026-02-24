@@ -1,0 +1,54 @@
+<lifecycle name="PR">
+
+  <summary>
+    Creates the pull request and closes the beads ticket.
+    All operations are delegated to sub-agents — the orchestrator never runs commands.
+  </summary>
+
+  <uses-behavior name="pr-template" />
+
+  <loop>
+    <!--
+      PREPARE → HUMAN_GATE → SUBMIT → HANDOFF
+                    │
+                    │ rejected → PREPARE
+                    └──────────┘
+    -->
+
+    <phase name="PREPARE" order="1">
+      <actor>Orchestrator launches a PR Drafter agent (reasoning tier)</actor>
+      <actions>
+        <action>Compile all commits on the feature branch</action>
+        <action>Review the full diff against main</action>
+        <action>Draft the PR using the pr-template behavior</action>
+      </actions>
+    </phase>
+
+    <phase name="HUMAN_GATE" order="2">
+      <actor>Orchestrator presents the draft PR to the human</actor>
+      <gate>BLOCKED — Do not proceed. Human approval required.</gate>
+      <note>Human may edit the title, body, or testing plan before approving.</note>
+    </phase>
+
+    <phase name="SUBMIT" order="3">
+      <actor>Orchestrator launches a Submitter agent (light tier)</actor>
+      <actions>
+        <action>Push any remaining commits to remote (doc updates, beads changes)</action>
+        <action>Create the PR via "gh pr create"</action>
+        <action>
+          Close the beads ticket with a close_reason summarizing what was done.
+          TRUNK_BASED: close the single ticket.
+          FEATURE_BRANCHING: close the epic ticket (all children should already be closed).
+        </action>
+        <action>Commit the beads closure on the branch before the PR merges</action>
+        <action>Report the PR URL back to the orchestrator</action>
+      </actions>
+    </phase>
+
+    <phase name="HANDOFF" order="4">
+      Ticket complete. PR created and ticket closed. Report PR URL to human.
+    </phase>
+
+  </loop>
+
+</lifecycle>

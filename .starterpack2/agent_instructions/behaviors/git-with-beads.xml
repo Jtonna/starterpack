@@ -1,0 +1,116 @@
+<behavior name="git-with-beads">
+
+  <summary>
+    All git rules in one place: branching strategies, branch naming, commit format,
+    push discipline, and beads integration. Every agent that touches git must follow these rules.
+  </summary>
+
+  <applies-to>orchestrator, implementer, light-implementer, doc-writer, submitter</applies-to>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       BRANCHING STRATEGIES
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <strategy name="TRUNK_BASED">
+    For single tickets with small, well-defined scope. One short-lived branch per ticket.
+    <when>
+      - The ticket is a single feature, bug, task, or chore
+      - The scope fits in one planning/implementation cycle
+      - No child tickets or decomposition needed
+    </when>
+    <flow>
+      One ticket → one branch (TYPE/ticket-id) → full lifecycle (PLANNING → IMPLEMENTATION → DOCS → PR) → merge → delete branch
+    </flow>
+  </strategy>
+
+  <strategy name="FEATURE_BRANCHING">
+    For epics or large features that decompose into multiple tickets. One long-lived
+    feature branch hosts all child ticket work. Child tickets do NOT get their own branches.
+    <when>
+      - The work originated from a spec file or was identified as an epic during planning
+      - Multiple child tickets exist under an epic
+    </when>
+    <flow>
+      Epic ticket → create long-lived branch (EPIC/epic-id) → for each child ticket in dependency order:
+        run PLANNING → IMPLEMENTATION on the same branch → close child ticket
+      → once all children complete: DOCS (full epic diff against main) → PR → merge → close epic → delete branch
+    </flow>
+    <rules>
+      <rule>All child tickets commit to the epic branch, not their own branches</rule>
+      <rule>Each child ticket runs PLANNING → IMPLEMENTATION only (not DOCS or PR)</rule>
+      <rule>DOCS runs once after all children are complete, diffing the full epic branch against main</rule>
+      <rule>PR runs once at the end for the entire epic, after DOCS</rule>
+      <rule>The epic ticket is closed only after all children are closed and the PR is merged</rule>
+    </rules>
+  </strategy>
+
+  <strategy-selection>
+    The orchestrator determines the strategy during entry routing:
+    - Spec file entry → FEATURE_BRANCHING (always)
+    - Existing ticket with type "epic" → FEATURE_BRANCHING
+    - Existing ticket with any other type → TRUNK_BASED
+    - Ad-hoc request → TRUNK_BASED (unless planning reveals it should be an epic)
+  </strategy-selection>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       BRANCH NAMING
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <branch-naming>
+    <rule>Never commit directly to main</rule>
+    <rule>All commits happen on the feature/epic branch</rule>
+    <rule>The orchestrator creates the branch during IMPLEMENTATION/LAUNCH</rule>
+
+    <issue-type-to-branch>
+      <type name="feature" branch-prefix="FEAT/" />
+      <type name="bug"     branch-prefix="BUG/" />
+      <type name="task"    branch-prefix="TASK/" />
+      <type name="chore"   branch-prefix="CHORE/" />
+      <type name="epic"    branch-prefix="EPIC/" />
+    </issue-type-to-branch>
+
+    <examples>
+      <example>git checkout -b FEAT/sp-0004</example>
+      <example>git checkout -b BUG/sp-0012</example>
+      <example>git checkout -b EPIC/sp-0020</example>
+    </examples>
+  </branch-naming>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       COMMIT DISCIPLINE
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <commit-rules>
+    <rule>
+      Every commit message starts with the ticket ID being worked (discover prefix from beads, never guess).
+      In FEATURE_BRANCHING, use the child ticket ID, not the epic ID.
+    </rule>
+    <rule>Commits must be granular — one logical change per commit</rule>
+    <rule>Multiple commits per sub-task are expected</rule>
+    <rule>Each commit must be atomic and independently valid (builds, no broken imports)</rule>
+    <rule>Never commit secrets, .env files, or credentials</rule>
+    <rule>Always include .beads/ files (especially .beads/issues.jsonl) in commits — the pre-commit hook stages them automatically, but verify they are included before pushing</rule>
+    <rule>Always verify the build passes before the final commit of a task</rule>
+  </commit-rules>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PUSH DISCIPLINE
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <push-rules>
+    <rule>
+      Teammates NEVER push directly. Only the orchestrator pushes, and only after human
+      approval at the HUMAN_GATE. This ensures unapproved work never reaches the remote.
+    </rule>
+    <rule>
+      After IMPLEMENTATION/HUMAN_GATE approval: the orchestrator pushes the branch to remote
+      before transitioning to HANDOFF. This is a single push covering all teammate commits.
+    </rule>
+    <rule>
+      After PR/HUMAN_GATE approval: the submitter pushes any remaining commits (from DOCS
+      or ticket closure) and creates the PR.
+    </rule>
+    <rule>Never force-push unless the human explicitly requests it</rule>
+  </push-rules>
+
+</behavior>
