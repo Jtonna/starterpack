@@ -169,8 +169,8 @@ param(
                 Write-Host "  ERROR: Beads is not initialized in this project." -ForegroundColor Red
                 Write-Host "  The starterpack requires Beads for ticket tracking." -ForegroundColor Yellow
                 Write-Host ""
-                Write-Host "  Re-run with STARTERPACK_INIT_BEADS=1 to auto-initialize:" -ForegroundColor Yellow
-                Write-Host '    $env:STARTERPACK_INIT_BEADS = "1"; irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex' -ForegroundColor Cyan
+                Write-Host "  Re-run with -InitBeads to auto-initialize:" -ForegroundColor Yellow
+                Write-Host "    powershell -File install.ps1 -InitBeads" -ForegroundColor Cyan
                 Write-Host ""
                 return
             }
