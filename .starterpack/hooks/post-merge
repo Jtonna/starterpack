@@ -33,20 +33,24 @@ if [ -z "$BEADS_DIR" ]; then
     exit 0
 fi
 
-# Skip for Dolt backend
+# Determine backend type
+IS_DOLT=false
 if [ -f "$BEADS_DIR/metadata.json" ]; then
     if grep -q '"backend"[[:space:]]*:[[:space:]]*"dolt"' "$BEADS_DIR/metadata.json" 2>/dev/null; then
-        exit 0
+        IS_DOLT=true
     fi
 fi
 
-if [ ! -f "$BEADS_DIR/issues.jsonl" ]; then
-    exit 0
-fi
+# Import JSONL into database (SQLite only — Dolt manages its own state)
+if [ "$IS_DOLT" = "false" ]; then
+    if [ ! -f "$BEADS_DIR/issues.jsonl" ]; then
+        exit 0
+    fi
 
-if ! bd import -i "$BEADS_DIR/issues.jsonl" >/dev/null 2>&1; then
-    echo "Warning: Failed to import bd changes after merge" >&2
-    echo "Run 'bd import -i $BEADS_DIR/issues.jsonl' manually to see the error" >&2
+    if ! bd import -i "$BEADS_DIR/issues.jsonl" >/dev/null 2>&1; then
+        echo "Warning: Failed to import bd changes after merge" >&2
+        echo "Run 'bd import -i $BEADS_DIR/issues.jsonl' manually to see the error" >&2
+    fi
 fi
 
 # Auto-commit .beads/ changes after import to prevent orphaned state
