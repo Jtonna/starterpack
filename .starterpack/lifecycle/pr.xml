@@ -40,7 +40,7 @@
       <actor>Orchestrator launches a Submitter agent (light tier)</actor>
 
       <actions>
-        <action>Push the feature branch to remote</action>
+        <action>Push any remaining commits to remote (doc updates, beads changes since the implementation push)</action>
         <action>Create the PR via "gh pr create"</action>
         <action>
           Close the beads ticket with a close_reason summarizing what was done.

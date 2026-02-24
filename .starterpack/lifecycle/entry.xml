@@ -72,11 +72,11 @@
 
   <branching-strategy>
     <!--
-      Strategy definitions are in .starterpack/behaviors/branching.xml. The selection logic
+      Strategy definitions are in .starterpack/behaviors/git-workflow.xml. The selection logic
       below determines which strategy to use.
     -->
 
-    <requires-behavior name="branching" />
+    <requires-behavior name="git-workflow" />
 
     <selection>
       The orchestrator determines the strategy during entry point routing:

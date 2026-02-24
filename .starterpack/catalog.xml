@@ -22,9 +22,9 @@
   </lifecycle>
 
   <behaviors>
-    <behavior name="commit-discipline"       file=".starterpack/behaviors/commit-discipline.xml"
-              description="Commit message format, granularity rules, .beads file inclusion"
-              used-by="implementer, light-implementer, doc-writer, submitter" />
+    <behavior name="git-workflow"             file=".starterpack/behaviors/git-workflow.xml"
+              description="Branching strategies, branch naming, commit format, push discipline"
+              used-by="orchestrator, implementer, light-implementer, doc-writer, submitter" />
     <behavior name="escalation"              file=".starterpack/behaviors/escalation.xml"
               description="Failure protocol: retry, structured report, escalation chain"
               used-by="orchestrator, implementer, light-implementer, doc-writer, submitter, explorer, planner, plan-reviewer, doc-scout, doc-auditor, pr-drafter" />
@@ -40,9 +40,6 @@
     <behavior name="pr-template"             file=".starterpack/behaviors/pr-template.xml"
               description="Pull request body template: summary, changes table, testing plan"
               used-by="pr-drafter" />
-    <behavior name="branching"               file=".starterpack/behaviors/branching.xml"
-              description="Branch naming conventions, trunk-based vs feature-branching rules"
-              used-by="orchestrator, submitter" />
   </behaviors>
 
   <config>

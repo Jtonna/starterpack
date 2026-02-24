@@ -8,7 +8,7 @@
 
   <loop>
     <!--
-      LAUNCH → DISPATCH → MONITOR → EVALUATE → HUMAN_GATE → HANDOFF
+      LAUNCH → DISPATCH → MONITOR → EVALUATE → HUMAN_GATE → PUSH → HANDOFF
                   ▲           │
                   │  failure   │
                   └─ ESCALATE ─┘
@@ -122,7 +122,24 @@
       <status-message>awaiting IMPLEMENTATION/HUMAN_GATE on {ticket-id} — BLOCKED: human approval required</status-message>
     </phase>
 
-    <phase name="HANDOFF" order="6">
+    <phase name="PUSH" order="6">
+      <actor>Orchestrator (Team Lead)</actor>
+
+      <actions>
+        <action>Push the branch to remote: git push -u origin {branch-name}</action>
+        <action>Confirm the push succeeded before transitioning</action>
+      </actions>
+
+      <note>
+        This is the only push during implementation. Teammates never push directly.
+        The push happens after human approval so unapproved work never reaches the remote.
+        See .starterpack/behaviors/git-workflow.xml push-rules for the full policy.
+      </note>
+
+      <status-message>executing IMPLEMENTATION/PUSH on {ticket-id} — pushing to remote</status-message>
+    </phase>
+
+    <phase name="HANDOFF" order="7">
       <description>
         TRUNK_BASED: proceed to the DOCS lifecycle.
         FEATURE_BRANCHING: close the child ticket. The beads changes (including the closure)
@@ -142,7 +159,7 @@
       implementation teammate. The orchestrator (team lead) reads these from .starterpack/behaviors/
       and includes them when spawning teammates.
     -->
-    <requires-behavior name="commit-discipline" />
+    <requires-behavior name="git-workflow" />
     <requires-behavior name="escalation" section="implementation-agents" />
     <requires-behavior name="scope-enforcement" section="agent-level" />
     <requires-behavior name="sub-task-tracking" />

@@ -88,17 +88,16 @@ release.ps1                            # Release tagging script (maintainer use)
   lifecycle/                         # WHEN things happen (phase sequences)
     entry.xml                        #   Entry points, branching strategy selection
     planning.xml                     #   Planning loop: intake → draft → review → human gate
-    implementation.xml               #   Implementation loop: dispatch → monitor → escalate → human gate
+    implementation.xml               #   Implementation loop: dispatch → monitor → escalate → human gate → push
     docs.xml                         #   Documentation audit loop
     pr.xml                           #   PR loop: prepare → human gate → submit
   behaviors/                         # WHAT agents can do (composable, standalone)
-    commit-discipline.xml            #   Commit message format, granularity rules
+    git-workflow.xml                 #   Branching strategies, commit format, push discipline
     escalation.xml                   #   Failure protocol, escalation chain
     scope-enforcement.xml            #   File scope limits, out-of-scope reporting
     sub-task-tracking.xml            #   Sub-task progress as ticket comments
     documentation-structure.xml      #   Doc model: single-project, monorepo layouts
     pr-template.xml                  #   PR body template
-    branching.xml                    #   Branch naming, trunk-based vs feature-branching
   config/                            # Infrastructure configuration
     models.xml                       #   Model tiers, roles, dispatch overrides
     beads.xml                        #   Issue tracker config, prefix management
