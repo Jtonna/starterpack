@@ -310,13 +310,29 @@ param(
         }
 
         # Step 8: Install git hooks
-        $hooksSourceDir = Join-Path (Join-Path $PWD ".starterpack") "hooks"
-        $gitHooksDir = Join-Path (Join-Path $PWD ".git") "hooks"
-        if ((Test-Path $hooksSourceDir) -and (Test-Path (Join-Path $PWD ".git"))) {
-            foreach ($hookFile in (Get-ChildItem -Path $hooksSourceDir -File -ErrorAction SilentlyContinue)) {
-                $destHook = Join-Path $gitHooksDir $hookFile.Name
-                Copy-Item -Path $hookFile.FullName -Destination $destHook -Force
-                Write-Host "  [ok] .git/hooks/$($hookFile.Name) (installed from .starterpack/hooks/)" -ForegroundColor Green
+        if (Test-Path (Join-Path $PWD ".git")) {
+            # Install all beads hooks (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg)
+            if (Get-Command "bd" -ErrorAction SilentlyContinue) {
+                $prevErrorPref = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+                bd hooks install --force 2>$null
+                $ErrorActionPreference = $prevErrorPref
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "  [ok] Beads hooks installed (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg)" -ForegroundColor Green
+                } else {
+                    Write-Host "  [warn] bd hooks install failed - run 'bd hooks install' manually" -ForegroundColor Yellow
+                }
+            }
+
+            # Overlay starterpack custom hooks (enhanced post-merge with worktree support and auto-commit)
+            $hooksSourceDir = Join-Path (Join-Path $PWD ".starterpack") "hooks"
+            $gitHooksDir = Join-Path (Join-Path $PWD ".git") "hooks"
+            if (Test-Path $hooksSourceDir) {
+                foreach ($hookFile in (Get-ChildItem -Path $hooksSourceDir -File -ErrorAction SilentlyContinue)) {
+                    $destHook = Join-Path $gitHooksDir $hookFile.Name
+                    Copy-Item -Path $hookFile.FullName -Destination $destHook -Force
+                    Write-Host "  [ok] .git/hooks/$($hookFile.Name) (starterpack override)" -ForegroundColor Green
+                }
             }
         }
 
