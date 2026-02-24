@@ -60,7 +60,6 @@ param(
     # Files to copy from the release archive into the target project
     $Manifest = @(
         "CLAUDE.md"
-        "AGENTS.md"
         ".gitattributes"
         ".starterpack/catalog.xml"
         ".starterpack/lifecycle/entry.xml"
