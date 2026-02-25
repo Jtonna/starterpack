@@ -18,7 +18,7 @@ set -euo pipefail
 # ── Constants ────────────────────────────────────────────────────────────────
 REPO_OWNER="Jtonna"
 REPO_NAME="starterpack"
-VERSION_FILE=".starterpack-version"
+VERSION_FILE=".starterpack/VERSION"
 
 # ── Colors (disabled if stdout is not a terminal) ───────────────────────────
 if [ -t 1 ]; then
@@ -184,8 +184,11 @@ resolve_version() {
 
 # ── Step 2: Check current version ───────────────────────────────────────────
 get_current_version() {
+    # Check new location first, then fall back to legacy location
     if [ -f "$VERSION_FILE" ]; then
         tr -d '[:space:]' < "$VERSION_FILE"
+    elif [ -f ".starterpack-version" ]; then
+        tr -d '[:space:]' < ".starterpack-version"
     fi
 }
 
@@ -202,6 +205,18 @@ if [ -n "$current_version" ]; then
     echo -e "${CYAN}Upgrading from $current_version to $resolved_version${RESET}"
 else
     echo -e "${CYAN}Installing starterpack $resolved_version${RESET}"
+fi
+
+# ── Migrate legacy version file ───────────────────────────────────────────
+if [ -f ".starterpack-version" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+        echo "[DRY RUN] Would migrate .starterpack-version → $VERSION_FILE"
+    else
+        mkdir -p "$(dirname "$VERSION_FILE")"
+        mv -f ".starterpack-version" "$VERSION_FILE"
+        git rm -f --cached ".starterpack-version" 2>/dev/null || true
+        echo -e "  ${GREEN}[ok] Migrated .starterpack-version → $VERSION_FILE${RESET}"
+    fi
 fi
 
 # ── Beads prerequisite gate ──────────────────────────────────────────────────
@@ -298,6 +313,9 @@ if [ -z "$extracted_root" ]; then
 fi
 
 # ── Step 5: Copy manifest files ─────────────────────────────────────────────
+# IMPORTANT: Upgrades replace all starterpack files EXCEPT beads data.
+# The .beads/issues.jsonl and .beads/ SQLite DB are project-specific and
+# must never be overwritten. The manifest only lists safe-to-replace files.
 copied=0
 skipped=0
 for file in "${MANIFEST[@]}"; do
@@ -433,7 +451,7 @@ if [ "$NO_COMMIT" != "1" ]; then
             echo -e "  ${YELLOW}[warn] Skipping auto-commit: you have staged changes that predate this install.${RESET}"
             echo -e "  ${YELLOW}       Commit or unstage your existing changes first, then re-run.${RESET}"
             echo -e "  ${YELLOW}       Or commit the starterpack files manually:${RESET}"
-            echo -e "  ${CYAN}         git add CLAUDE.md .starterpack/ .starterpack-version${RESET}"
+            echo -e "  ${CYAN}         git add CLAUDE.md .starterpack/${RESET}"
             if [ -n "$current_version" ]; then
                 commit_action="upgrade"
             else
@@ -444,7 +462,6 @@ if [ "$NO_COMMIT" != "1" ]; then
             # Stage only specific installed files
             files_to_stage=(
                 "CLAUDE.md"
-                ".starterpack-version"
                 ".starterpack/"
                 ".gitattributes"
                 ".claude/"

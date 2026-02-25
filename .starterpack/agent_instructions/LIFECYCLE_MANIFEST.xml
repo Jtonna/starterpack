@@ -16,6 +16,7 @@
   <rules>
     <rule>Never skip a phase</rule>
     <rule>Never combine phases</rule>
+    <rule>Auto-approving gates does not permit skipping phases — every phase must execute even when gates are pre-approved (see human-gate autonomous-mode)</rule>
     <rule>Every HUMAN_GATE is a hard block — do not proceed until the human approves</rule>
     <rule>If any phase fails and cannot be resolved via escalation, stop and ask the human</rule>
     <rule>Every child ticket runs the full lifecycle: PLANNING → IMPLEMENTATION → DOCS → PR</rule>

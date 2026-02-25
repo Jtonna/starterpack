@@ -21,4 +21,47 @@
     </rule>
   </section>
 
+  <section name="autonomous-mode">
+    <summary>
+      When the human requests autonomous operation (e.g., "approve everything",
+      "run without me", "bypass gates"), the orchestrator enters autonomous mode.
+      Autonomous mode auto-approves HUMAN_GATE decisions — it does NOT skip
+      lifecycle phases. Every phase still executes fully.
+    </summary>
+
+    <activation>
+      <rule order="1">
+        When the human signals autonomous intent, the orchestrator MUST clarify
+        scope BEFORE proceeding. Present the following questions:
+      </rule>
+      <rule order="2">
+        Scope — which tickets to complete autonomously:
+        - Single ticket (current ticket only)
+        - All remaining tickets in the epic
+        - Custom selection
+      </rule>
+      <rule order="3">
+        PR handling — what to do when a PR is created:
+        - Create PR only (human merges later)
+        - Create and merge each PR automatically
+      </rule>
+      <rule order="4">
+        Docs phase — how to handle documentation:
+        - Run docs phase normally (scout, audit if needed, auto-approve changes)
+        - Skip docs phase entirely
+      </rule>
+      <rule order="5">
+        Only proceed once the human confirms the scope. Do not assume defaults.
+      </rule>
+    </activation>
+
+    <rules>
+      <rule>Auto-approve ONLY affects gate decisions — phases still execute fully</rule>
+      <rule>The SCOUT phase in DOCS must still run to produce a triage outcome, even if the gate is auto-approved</rule>
+      <rule>If a phase fails, exit autonomous mode and escalate to the human</rule>
+      <rule>Log every auto-approved gate in the status output so the human can review later</rule>
+      <rule>The human can revoke autonomous mode at any time by sending a message</rule>
+    </rules>
+  </section>
+
 </behavior>
