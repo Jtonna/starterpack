@@ -1,65 +1,37 @@
 <behavior name="git-with-beads">
 
   <summary>
-    All git rules in one place: branching strategies, branch naming, commit format,
+    All git rules in one place: branching model, branch naming, commit format,
     push discipline, and beads integration. Every agent that touches git must follow these rules.
   </summary>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       BRANCHING STRATEGIES
+       BRANCHING MODEL
        ═══════════════════════════════════════════════════════════════════════ -->
 
-  <section name="branching-strategies">
+  <section name="branching-model">
 
-    <strategy name="TRUNK_BASED">
-      For single tickets with small, well-defined scope. One short-lived branch per ticket.
-      <when>
-        - The ticket is a single feature, bug, task, or chore
-        - The scope fits in one planning/implementation cycle
-        - No child tickets or decomposition needed
-      </when>
-      <flow>
-        One ticket → one branch (TYPE/ticket-id) → full development cycle
-        (plan, implement, document, pull request) → merge → delete branch
-      </flow>
-    </strategy>
+    <rule name="trunk-based">
+      All development is trunk-based. Every ticket gets its own short-lived branch
+      off the base branch and merges back. Branches are deleted after merge.
+    </rule>
 
-    <strategy name="FEATURE_BRANCHING">
-      For epics or large features that decompose into multiple tickets. One long-lived
-      feature branch hosts all child ticket work. Child tickets do NOT get their own branches.
-      <when>
-        - The work originated from a spec file or was identified as an epic during planning
-        - Multiple child tickets exist under an epic
-      </when>
-      <flow>
-        Epic ticket → create long-lived branch (EPIC/epic-id) → for each child ticket in dependency order:
-          plan and implement on the same branch → close child ticket
-        → once all children complete: documentation review (full epic diff against main),
-          then pull request → merge → close epic → delete branch
-      </flow>
-      <rules>
-        <rule name="child-commits-to-epic-branch">All child tickets commit to the epic branch, not their own branches</rule>
-        <rule name="child-plan-and-implement-only">Each child ticket runs planning and implementation only — no standalone docs review or pull request per child</rule>
-        <rule name="docs-review-runs-once">Documentation review runs once after all children are complete, diffing the full epic branch against main</rule>
-        <rule name="pr-runs-once">A single pull request is opened at the end for the entire epic, after documentation review</rule>
-        <rule name="epic-closed-last">The epic ticket is closed only after all children are closed and the pull request is merged</rule>
-      </rules>
-    </strategy>
+    <rule name="base-branch-selection">
+      The base branch determines where ticket branches are created from and where
+      pull requests target:
+      - "main" (default): ticket branches are created from main, PRs merge to main.
+      - A feature branch (EPIC/{epic-id}): created from main for multi-ticket work.
+        Ticket branches are created from the feature branch, PRs merge to the
+        feature branch. A final PR merges the feature branch to main after all
+        children complete.
+    </rule>
 
-  </section>
+    <rule name="epic-closed-last">
+      The epic ticket is closed only after all children are closed. When using a
+      feature branch, the epic is closed as part of the final pull request from the
+      feature branch to main.
+    </rule>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       STRATEGY SELECTION
-       ═══════════════════════════════════════════════════════════════════════ -->
-
-  <section name="strategy-selection">
-    <strategy-selection>
-      Strategy selection criteria:
-      - Spec file → FEATURE_BRANCHING (always)
-      - Existing ticket with type "epic" → FEATURE_BRANCHING
-      - Existing ticket with any other type → TRUNK_BASED
-      - Ad-hoc request → TRUNK_BASED (unless scope grows to require an epic)
-    </strategy-selection>
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
@@ -68,8 +40,7 @@
 
   <section name="branch-naming">
     <rule name="no-direct-main-commits">Never commit directly to main</rule>
-    <rule name="all-commits-on-feature-branch">All commits happen on the feature/epic branch</rule>
-    <rule name="branch-created-first">The working branch must be created before any other work begins</rule>
+    <rule name="all-commits-on-branch">All commits happen on a ticket branch or feature branch, never directly on main</rule>
 
     <issue-type-to-branch>
       <type name="feature" branch-prefix="FEAT/" />
@@ -92,8 +63,8 @@
 
   <section name="commit-discipline">
     <rule name="ticket-id-prefix">
-      Every commit message starts with the ticket ID being worked (discover prefix from beads, never guess).
-      In FEATURE_BRANCHING, use the child ticket ID, not the epic ID.
+      Every commit message starts with the ticket ID being worked (discover prefix
+      from beads, never guess). Always use the child ticket ID, not the epic ID.
     </rule>
     <rule name="granular-commits">Commits must be granular — one logical change per commit</rule>
     <rule name="multiple-commits-expected">Multiple commits per sub-task are expected</rule>
@@ -119,8 +90,8 @@
       before any further work begins.
     </rule>
     <rule name="push-after-implementation-approval">
-      After human approval following implementation: the branch is pushed to remote
-      before handing off to the next phase. This is a single push covering all commits.
+      After human approval following implementation: the branch is pushed to remote.
+      This is a single push covering all commits.
     </rule>
     <rule name="push-before-pr">
       After human approval before opening the pull request: any remaining commits

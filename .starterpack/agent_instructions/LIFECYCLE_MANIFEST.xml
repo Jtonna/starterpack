@@ -18,15 +18,13 @@
     <rule>Never combine phases</rule>
     <rule>Every HUMAN_GATE is a hard block — do not proceed until the human approves</rule>
     <rule>If any phase fails and cannot be resolved via escalation, stop and ask the human</rule>
-    <rule>
-      Exception: in FEATURE_BRANCHING, DOCS and PR run once for the epic after all children
-      complete, not per child ticket.
-    </rule>
+    <rule>Every child ticket runs the full lifecycle: PLANNING → IMPLEMENTATION → DOCS → PR</rule>
+    <rule>When using a feature branch, a final PR merges the feature branch to main after all children complete</rule>
   </rules>
 
   <phase name="ENTRY" file="lifecycle/entry.xml">
     Routes incoming work. Three entry points: existing ticket, spec file, or ad-hoc request.
-    Creates tickets if needed. Selects branching strategy (trunk-based or feature branching).
+    Creates tickets if needed. Selects base branch (main or feature branch). Creates initial branch and pushes beads metadata.
     Behaviors: git-with-beads, scope-enforcement, human-gate, response-format
   </phase>
 
@@ -37,7 +35,7 @@
   </phase>
 
   <phase name="IMPLEMENTATION" file="lifecycle/implementation.xml">
-    Creates branch. Spawns implementation teammates via Agent Teams. Monitors progress.
+    Ensures ticket branch exists. Spawns implementation teammates via Agent Teams. Monitors progress.
     Escalates failures (technical → Opus, requirements → human). Human approval gate.
     Pushes to remote after approval.
     Behaviors: git-with-beads, escalation, scope-enforcement, sub-task-tracking, human-gate, response-format
@@ -50,9 +48,9 @@
   </phase>
 
   <phase name="PR" file="lifecycle/pr.xml">
-    Drafts pull request with summary, changes table, and testing plan.
-    Human approval gate. Submitter pushes, creates PR, closes ticket.
-    Behaviors: pr-template, human-gate, response-format
+    Closes ticket, pushes, and creates pull request for human review.
+    Handles next-child loop and final feature-branch PR.
+    Behaviors: pr-template, response-format
   </phase>
 
   <phase name="AUTHORING_BEHAVIORS_AND_LIFECYCLES" file="lifecycle/authoring-behaviors-and-lifecycles.xml" on-demand="true">

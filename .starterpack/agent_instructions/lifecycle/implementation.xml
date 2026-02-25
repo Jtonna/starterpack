@@ -25,12 +25,11 @@
     <phase name="LAUNCH" order="1">
       <actor>Orchestrator (reasoning tier, acting as Agent Team lead)</actor>
       <actions>
-        <action>Read the approved plan, ticket ID, ticket issue_type, and branching strategy</action>
+        <action>Read the approved plan, ticket ID, ticket issue_type, and base branch</action>
         <action>
-          Confirm the working branch exists (it must have been created before this phase):
-          TRUNK_BASED: Verify branch {PREFIX}/{ticket-id} is checked out.
-          FEATURE_BRANCHING: Verify branch EPIC/{epic-id} is checked out.
-          If the branch is missing, stop and report the error — do not create it here.
+          Ensure the ticket's branch exists: create branch {PREFIX}/{ticket-id}
+          off the base branch if not already checked out, or verify it is checked
+          out if it already exists.
         </action>
         <action>Create the Agent Team for this implementation cycle</action>
       </actions>
@@ -80,19 +79,12 @@
       </actions>
       <on-success>All teammates succeeded → proceed to HUMAN_GATE</on-success>
       <on-failure>
-        <actions>
-          <action>Review the failure context and classify the failure type</action>
-          <action>
-            TECHNICAL FAILURE (logic bug, command error, test failure, syntax issue):
-            Spawn an Opus teammate with the failure context to attempt resolution.
-            If resolved → loop to DISPATCH for remaining work.
-            If Opus also fails → present to human.
-          </action>
-          <action>
-            REQUIREMENTS FAILURE (impossible plan, unclear spec, wrong direction):
-            Present the failure to the human for clarification.
-          </action>
-        </actions>
+        Classify the failure as TECHNICAL or REQUIREMENTS.
+        TECHNICAL (logic bug, command error, test failure, syntax issue): spawn an
+        Opus teammate with the failure context. If resolved, loop to DISPATCH for
+        remaining work. If Opus also fails, present to human.
+        REQUIREMENTS (impossible plan, unclear spec, wrong direction): present to
+        the human for clarification.
       </on-failure>
     </phase>
 
@@ -120,16 +112,6 @@
 
     <phase name="HANDOFF" order="7">
       <actor>Orchestrator (reasoning tier, Team Lead)</actor>
-      <actions>
-        <action>
-          TRUNK_BASED: proceed to DOCS.
-        </action>
-        <action>
-          FEATURE_BRANCHING: close the child ticket, commit the beads closure to
-          the branch, then pick the next ready child or proceed to DOCS if all
-          children are complete.
-        </action>
-      </actions>
       <on-success>Lifecycle complete. Proceed to DOCS.</on-success>
     </phase>
 

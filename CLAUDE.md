@@ -35,19 +35,19 @@
 
   <master-lifecycle>
     <task order="0" lifecycle="ENTRY">
-      Identify entry point → Create ticket(s) if needed → Select branching strategy → Route to PLANNING.
+      Identify entry point → Create ticket(s) if needed → Select base branch (main or feature branch) → Create branch → Push beads metadata → Route to PLANNING.
     </task>
     <task order="1" lifecycle="PLANNING">
       Read ticket → Explore codebase and docs → Draft plan → Review plan → HUMAN_GATE.
     </task>
     <task order="2" lifecycle="IMPLEMENTATION">
-      Create branch → Spawn implementation team → Monitor → Escalate failures (technical → Opus, requirements → human) → HUMAN_GATE → Push.
+      Ensure branch → Spawn implementation team → Monitor → Escalate failures (technical → Opus, requirements → human) → HUMAN_GATE → Push.
     </task>
     <task order="3" lifecycle="DOCS">
       Launch scout → Triage changes → If needed, audit and apply → HUMAN_GATE.
     </task>
     <task order="4" lifecycle="PR">
-      Draft PR → HUMAN_GATE → Submit and close ticket.
+      Close ticket → Push → Create PR → Report to human → Next child or final PR if on feature branch.
     </task>
   </master-lifecycle>
 
@@ -56,7 +56,8 @@
     <rule>Never combine lifecycle phases</rule>
     <rule>Every HUMAN_GATE is a hard block — do not proceed until the human approves</rule>
     <rule>If any phase fails and cannot be resolved via escalation, stop and ask the human</rule>
-    <rule>In FEATURE_BRANCHING, DOCS and PR run once for the epic after all children complete</rule>
+    <rule>Every child ticket runs the full lifecycle: PLANNING → IMPLEMENTATION → DOCS → PR</rule>
+    <rule>When using a feature branch, a final PR merges the feature branch to main after all children complete</rule>
   </rules>
 
 </runtime>

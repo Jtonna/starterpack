@@ -2,36 +2,36 @@
 
   <summary>
     Routes incoming work to the correct lifecycle. Creates tickets if needed.
-    Selects branching strategy. Creates the working branch and pushes beads
+    Determines the base branch, creates initial branches, and pushes beads
     metadata to remote. Every change must be tied to a beads ticket.
   </summary>
 
   <!--
-    ASCII FLOW — ENTRY lifecycle
+    ASCII FLOW: ENTRY lifecycle
 
     [START]
         |
         v
     [Phase 1: IDENTIFY_ENTRY]
         |
-        |-- EXISTING_TICKET -------> [Phase 2: TICKET_AND_BRANCH_SETUP]
+        +~~ EXISTING_TICKET ~~~~~~> [Phase 2: TICKET_AND_BRANCH_SETUP]
         |                                  |
         |                                  v
-        |                            [Phase 4: BRANCH_AND_PUSH] --> [PLANNING]
+        |                            [Phase 4: BRANCH_AND_PUSH] ~~> [PLANNING]
         |
-        |-- AD_HOC_REQUEST --------> [Phase 2: TICKET_AND_BRANCH_SETUP]
+        +~~ AD_HOC_REQUEST ~~~~~~=> [Phase 2: TICKET_AND_BRANCH_SETUP]
         |                                  |
         |                                  v
-        |                            [Phase 4: BRANCH_AND_PUSH] --> [PLANNING]
+        |                            [Phase 4: BRANCH_AND_PUSH] ~~> [PLANNING]
         |
-        \-- SPEC_FILE ------------> [Phase 2: TICKET_AND_BRANCH_SETUP]
+        +~~ SPEC_FILE ~~~~~~~~~~~~~> [Phase 2: TICKET_AND_BRANCH_SETUP]
                                           |
                                           v
                                     [Phase 3: SPEC_FILE_APPROVAL]
                                           |
-                                          |-- approved --> [Phase 4: BRANCH_AND_PUSH] --> [PLANNING]
+                                          +~~ approved ~~> [Phase 4: BRANCH_AND_PUSH] ~~> [PLANNING]
                                           |
-                                          \-- rejected --> [Phase 2: TICKET_AND_BRANCH_SETUP]
+                                          +~~ rejected ~~> [Phase 2: TICKET_AND_BRANCH_SETUP]
                                                            (revise breakdown and re-present)
   -->
 
@@ -95,13 +95,16 @@
         Confirm with the human: "Created {ticket-id}: {title}. Proceeding."
       </action>
 
-      <!-- Branching strategy selection — all paths -->
+      <!-- Base branch selection — all paths -->
       <action>
-        Determine branching strategy using the rules from git-with-beads:
-        - SPEC_FILE entry → FEATURE_BRANCHING (always)
-        - EXISTING_TICKET with type "epic" → FEATURE_BRANCHING
-        - EXISTING_TICKET with any other type → TRUNK_BASED
-        - AD_HOC_REQUEST → TRUNK_BASED (unless planning reveals it should be an epic)
+        Determine the base branch. Check the current git context first — if
+        already on a feature branch (e.g. mid-epic work), default to that
+        branch as the base. Otherwise, reason about the appropriate base:
+        - If the context makes the base branch obvious, use it.
+        - If ambiguous, ask the human which base branch to use (main or an
+          existing feature branch).
+        The base branch is where the ticket's branch will be created from
+        and where its PR will target.
       </action>
 
     </actions>
@@ -117,7 +120,7 @@
       <action>
         Present the full ticket breakdown to the human for approval (see human-gate behavior).
         Include: epic ticket ID, all child ticket IDs and titles, dependency ordering, and
-        selected branching strategy.
+        selected base branch (main or feature branch).
       </action>
       <action>Wait for explicit human approval before proceeding.</action>
     </actions>
@@ -130,21 +133,26 @@
     <actor>Orchestrator (reasoning tier)</actor>
     <actions>
       <action>
-        Create the working branch using the issue-type to branch-prefix mapping
-        from git-with-beads:
-        TRUNK_BASED: git checkout -b {PREFIX}/{ticket-id}
-        FEATURE_BRANCHING: git checkout -b EPIC/{epic-id}
+        If a feature branch was selected as the base branch:
+        Create the feature branch from main: git checkout -b EPIC/{epic-id}
       </action>
       <action>
-        Commit beads metadata to the new branch:
+        For multi-ticket work (SPEC_FILE or epic): pick the first ready child
+        ticket (bd ready). This child ticket ID becomes the active ticket for
+        the PLANNING and IMPLEMENTATION phases.
+      </action>
+      <action>
+        Create the active ticket's branch off the base branch using the
+        issue-type to branch-prefix mapping from git-with-beads:
+        git checkout -b {PREFIX}/{ticket-id}
+      </action>
+      <action>
+        Commit beads metadata to the ticket branch:
         git add .beads/ &amp;&amp; git commit -m "{ticket-id}: initialize beads metadata"
       </action>
       <action>
         Push the branch with metadata to remote:
         git push -u origin {branch-name}
-      </action>
-      <action entry="SPEC_FILE">
-        Pick the first ready ticket (bd ready) for handoff to PLANNING.
       </action>
     </actions>
     <note>
