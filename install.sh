@@ -31,7 +31,7 @@ else
     RED='' GREEN='' YELLOW='' CYAN='' RESET=''
 fi
 
-# ── Manifest — must match install.ps1 EXACTLY ───────────────────────────────
+# ── Manifest ─────────────────────────────────────────────────────────────────
 MANIFEST=(
     "CLAUDE.md"
     ".gitattributes"

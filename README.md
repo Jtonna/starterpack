@@ -43,15 +43,6 @@ Skip auto-commit:
 curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads --no-commit
 ```
 
-<details>
-<summary>PowerShell alternative</summary>
-
-```powershell
-irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 -OutFile $env:TEMP\sp.ps1; & $env:TEMP\sp.ps1 -InitBeads
-```
-
-</details>
-
 ### Start Claude Code
 
 ```bash
