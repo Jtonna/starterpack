@@ -41,7 +41,7 @@ if [ -f "$BEADS_DIR/metadata.json" ]; then
     fi
 fi
 
-# Import JSONL into database (SQLite only — Dolt manages its own state)
+# Import JSONL into database (SQLite backend)
 if [ "$IS_DOLT" = "false" ]; then
     if [ ! -f "$BEADS_DIR/issues.jsonl" ]; then
         exit 0

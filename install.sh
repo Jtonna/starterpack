@@ -128,12 +128,6 @@ fetch() {
     fi
 }
 
-# ── Helper: test if a TCP port is open ──────────────────────────────────────
-port_is_open() {
-    local host="$1" port="$2"
-    (echo >/dev/tcp/"$host"/"$port") 2>/dev/null
-}
-
 # ── Temp directory with cleanup trap ─────────────────────────────────────────
 TEMP_DIR=""
 cleanup() {
@@ -234,56 +228,17 @@ if [ "$beads_initialized" = false ]; then
         echo ""
         exit 1
     fi
-    if ! command -v dolt >/dev/null 2>&1; then
+    # ── Beads version gate ────────────────────────────────────────────────
+    bd_version=$(bd version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    bd_minor=$(echo "$bd_version" | cut -d. -f2)
+    if [ -z "$bd_version" ] || [ "$bd_minor" != "49" ]; then
         echo ""
-        echo -e "${RED}  ERROR: --init-beads was specified but 'dolt' was not found on PATH.${RESET}"
-        echo -e "${YELLOW}  Beads v0.56+ requires Dolt as its database backend.${RESET}"
-        echo -e "${YELLOW}  Install Dolt from: https://github.com/dolthub/dolt${RESET}"
+        echo -e "${RED}  ERROR: beads v${bd_version:-unknown} is not supported.${RESET}"
+        echo -e "${YELLOW}  This starterpack requires beads v0.49.x (SQLite/JSONL backend).${RESET}"
+        echo -e "${YELLOW}  v0.50+ switched to Dolt which breaks cross-device sync via git.${RESET}"
+        echo -e "${YELLOW}  Install v0.49.6: https://github.com/steveyegge/beads/releases/tag/v0.49.6${RESET}"
         echo ""
         exit 1
-    fi
-
-    # ── Dolt server bootstrap ─────────────────────────────────────────────
-    DOLT_HOST="127.0.0.1"
-    DOLT_PORT="3307"
-    DOLT_DB_DIR="$HOME/dolt-db"
-
-    if ! port_is_open "$DOLT_HOST" "$DOLT_PORT"; then
-        echo -e "${YELLOW}  Dolt server not detected on ${DOLT_HOST}:${DOLT_PORT}.${RESET}"
-        if [ "$DRY_RUN" = "1" ]; then
-            echo "[DRY RUN] Would bootstrap Dolt server at ${DOLT_DB_DIR}"
-        else
-            if [ ! -d "$DOLT_DB_DIR" ]; then
-                echo "  Creating Dolt database directory at ${DOLT_DB_DIR}..."
-                mkdir -p "$DOLT_DB_DIR"
-                if ! (cd "$DOLT_DB_DIR" && dolt init); then
-                    echo -e "${RED}  ERROR: dolt init failed at ${DOLT_DB_DIR}.${RESET}" >&2
-                    exit 1
-                fi
-                echo -e "${GREEN}  [ok] Dolt database initialized at ${DOLT_DB_DIR}.${RESET}"
-            else
-                echo "  Dolt database directory already exists at ${DOLT_DB_DIR}."
-            fi
-
-            echo "  Starting Dolt server on ${DOLT_HOST}:${DOLT_PORT}..."
-            (cd "$DOLT_DB_DIR" && dolt sql-server --host "$DOLT_HOST" --port "$DOLT_PORT" \
-                >/dev/null 2>&1 &)
-
-            dolt_wait=0
-            dolt_max=15
-            while ! port_is_open "$DOLT_HOST" "$DOLT_PORT"; do
-                if [ "$dolt_wait" -ge "$dolt_max" ]; then
-                    echo -e "${RED}  ERROR: Dolt server did not start within ${dolt_max}s.${RESET}" >&2
-                    echo -e "${YELLOW}  Start it manually:  cd ${DOLT_DB_DIR} && dolt sql-server --port ${DOLT_PORT}${RESET}" >&2
-                    exit 1
-                fi
-                sleep 1
-                dolt_wait=$((dolt_wait + 1))
-            done
-            echo -e "${GREEN}  [ok] Dolt server is running on ${DOLT_HOST}:${DOLT_PORT}.${RESET}"
-        fi
-    else
-        echo -e "${GREEN}  [ok] Dolt server already running on ${DOLT_HOST}:${DOLT_PORT}.${RESET}"
     fi
 
     if [ "$DRY_RUN" = "1" ]; then
@@ -494,7 +449,6 @@ if [ "$NO_COMMIT" != "1" ]; then
                 ".gitattributes"
                 ".claude/"
                 ".github/"
-                ".gitignore"
             )
             if [ -d ".beads/" ]; then
                 files_to_stage+=(".beads/")
@@ -539,8 +493,12 @@ if ! command -v bd >/dev/null 2>&1; then
     warnings+=("Beads CLI (bd) not found. Install from: https://github.com/steveyegge/beads")
 fi
 
-if ! command -v dolt >/dev/null 2>&1; then
-    warnings+=("Dolt not found. Beads v0.56+ uses Dolt as its database backend. Install from: https://github.com/dolthub/dolt")
+if command -v bd >/dev/null 2>&1; then
+    bd_ver=$(bd version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    bd_min=$(echo "$bd_ver" | cut -d. -f2)
+    if [ -n "$bd_ver" ] && [ "$bd_min" != "49" ]; then
+        warnings+=("Beads v${bd_ver} detected but v0.49.x is required. Install v0.49.6 from: https://github.com/steveyegge/beads/releases/tag/v0.49.6")
+    fi
 fi
 
 if ! command -v claude >/dev/null 2>&1; then

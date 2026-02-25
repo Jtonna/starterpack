@@ -81,10 +81,10 @@ for item in json.load(sys.stdin):
 }
 
 if [ "$IS_DOLT" = "true" ]; then
-    # Dolt backend: export via bd list
+    # Dolt backend: export via bd list (unused with v0.49.x)
     flush_via_list
 else
-    # SQLite/legacy: try bd sync --flush-only, fall back to bd list
+    # SQLite: try bd sync --flush-only, fall back to bd list
     if ! bd sync --flush-only >/dev/null 2>&1; then
         flush_via_list
     fi

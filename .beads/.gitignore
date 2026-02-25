@@ -1,8 +1,7 @@
-# Dolt database (managed by Dolt, not git)
+# Dolt artifacts (safety net)
 dolt/
 dolt-access.lock
 
-# Dolt runtime artifacts
 bd.sock.startlock
 
 # Runtime files
@@ -31,7 +30,7 @@ ephemeral.sqlite3-journal
 ephemeral.sqlite3-wal
 ephemeral.sqlite3-shm
 
-# Legacy files (from pre-Dolt versions)
+# Legacy database files
 *.db
 *.db?*
 *.db-journal

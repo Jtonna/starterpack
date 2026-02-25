@@ -15,8 +15,7 @@ Arguably the most important part is a structured workflow to create new behavior
 ### Prerequisites
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
-- [Beads CLI](https://github.com/steveyegge/beads) installed (`v0.56.1+`)
-- [Dolt](https://github.com/dolthub/dolt) installed (the installer auto-starts a Dolt server when using `--init-beads`)
+- [Beads CLI](https://github.com/steveyegge/beads) v0.49.6 ([why?](#why-beads-v0496))
 - A GitHub repo with Actions enabled
 
 ### Install
@@ -43,7 +42,7 @@ Skip auto-commit:
 curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads --no-commit
 ```
 
-> **Note:** `--init-beads` automatically creates a Dolt database at `~/dolt-db`, starts `dolt sql-server` on `127.0.0.1:3307`, and initializes Beads. No manual Dolt setup required.
+> **Note:** `--init-beads` automatically initializes the Beads issue tracker (SQLite/JSONL backend). No additional setup required.
 
 ### Start Claude Code
 
@@ -128,6 +127,10 @@ The sync is one-way (beads to GitHub) and branch-aware. On feature branches, it 
 Labels are applied automatically based on issue type and priority. If you have a GitHub Projects board, the sync can update that too.
 
 See `.starterpack/beads_sync.md` for the full details on trigger conditions, label mapping, deduplication, and configuration.
+
+## Why Beads v0.49.6
+
+The starterpack pins Beads to v0.49.6 because v0.50+ switched from SQLite to Dolt as the database backend. Dolt maintains its own version history separate from git, which means ticket data no longer syncs across devices via `git pull`. With v0.49.6, all issue data lives in `.beads/issues.jsonl` — a git-tracked file that syncs naturally when you push and pull.
 
 ## License
 

@@ -26,8 +26,8 @@ bd show <issue-id>
 bd update <issue-id> --status in_progress
 bd update <issue-id> --status done
 
-# Sync with git remote
-bd sync
+# Issues sync via git — just commit and push
+git add .beads/ && git commit -m "chore: update tickets" && git push
 ```
 
 ### Working with Issues
