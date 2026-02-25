@@ -1,0 +1,3 @@
+# Dolt — prevent accidental commits if dolt is run from the project root
+.dolt/
+.doltcfg/
