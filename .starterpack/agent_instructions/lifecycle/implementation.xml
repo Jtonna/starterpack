@@ -27,9 +27,10 @@
       <actions>
         <action>Read the approved plan, ticket ID, ticket issue_type, and branching strategy</action>
         <action>
-          Branch handling (rules from git-with-beads behavior):
-          TRUNK_BASED: Create a new branch using the issue-type → branch-prefix mapping.
-          FEATURE_BRANCHING: Create or checkout the epic branch (EPIC/epic-id).
+          Confirm the working branch exists (it must have been created before this phase):
+          TRUNK_BASED: Verify branch {PREFIX}/{ticket-id} is checked out.
+          FEATURE_BRANCHING: Verify branch EPIC/{epic-id} is checked out.
+          If the branch is missing, stop and report the error — do not create it here.
         </action>
         <action>Create the Agent Team for this implementation cycle</action>
       </actions>

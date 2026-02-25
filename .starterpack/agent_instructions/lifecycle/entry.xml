@@ -2,7 +2,8 @@
 
   <summary>
     Routes incoming work to the correct lifecycle. Creates tickets if needed.
-    Selects branching strategy. Every change must be tied to a beads ticket.
+    Selects branching strategy. Creates the working branch and pushes beads
+    metadata to remote. Every change must be tied to a beads ticket.
   </summary>
 
   <!--
@@ -13,16 +14,22 @@
         v
     [Phase 1: IDENTIFY_ENTRY]
         |
-        |-- EXISTING_TICKET -------> [Phase 2: TICKET_AND_BRANCH_SETUP] --> [PLANNING]
+        |-- EXISTING_TICKET -------> [Phase 2: TICKET_AND_BRANCH_SETUP]
+        |                                  |
+        |                                  v
+        |                            [Phase 4: BRANCH_AND_PUSH] --> [PLANNING]
         |
-        |-- AD_HOC_REQUEST --------> [Phase 2: TICKET_AND_BRANCH_SETUP] --> [PLANNING]
+        |-- AD_HOC_REQUEST --------> [Phase 2: TICKET_AND_BRANCH_SETUP]
+        |                                  |
+        |                                  v
+        |                            [Phase 4: BRANCH_AND_PUSH] --> [PLANNING]
         |
         \-- SPEC_FILE ------------> [Phase 2: TICKET_AND_BRANCH_SETUP]
                                           |
                                           v
                                     [Phase 3: SPEC_FILE_APPROVAL]
                                           |
-                                          |-- approved --> [PLANNING]
+                                          |-- approved --> [Phase 4: BRANCH_AND_PUSH] --> [PLANNING]
                                           |
                                           \-- rejected --> [Phase 2: TICKET_AND_BRANCH_SETUP]
                                                            (revise breakdown and re-present)
@@ -98,8 +105,8 @@
       </action>
 
     </actions>
-    <on-success entry="EXISTING_TICKET">Proceed to PLANNING</on-success>
-    <on-success entry="AD_HOC_REQUEST">Proceed to PLANNING</on-success>
+    <on-success entry="EXISTING_TICKET">Proceed to BRANCH_AND_PUSH</on-success>
+    <on-success entry="AD_HOC_REQUEST">Proceed to BRANCH_AND_PUSH</on-success>
     <on-success entry="SPEC_FILE">Proceed to SPEC_FILE_APPROVAL</on-success>
     <on-failure>Stop and report the failure to the human before continuing</on-failure>
   </phase>
@@ -114,9 +121,38 @@
       </action>
       <action>Wait for explicit human approval before proceeding.</action>
     </actions>
-    <on-success>Pick the first ready ticket (bd ready) and proceed to PLANNING</on-success>
+    <on-success>Proceed to BRANCH_AND_PUSH</on-success>
     <on-failure>Stop and report the failure to the human</on-failure>
     <on-rejection>Return to TICKET_AND_BRANCH_SETUP to revise the ticket breakdown based on human feedback, then re-present</on-rejection>
+  </phase>
+
+  <phase name="BRANCH_AND_PUSH" order="4">
+    <actor>Orchestrator (reasoning tier)</actor>
+    <actions>
+      <action>
+        Create the working branch using the issue-type to branch-prefix mapping
+        from git-with-beads:
+        TRUNK_BASED: git checkout -b {PREFIX}/{ticket-id}
+        FEATURE_BRANCHING: git checkout -b EPIC/{epic-id}
+      </action>
+      <action>
+        Commit beads metadata to the new branch:
+        git add .beads/ &amp;&amp; git commit -m "{ticket-id}: initialize beads metadata"
+      </action>
+      <action>
+        Push the branch with metadata to remote:
+        git push -u origin {branch-name}
+      </action>
+      <action entry="SPEC_FILE">
+        Pick the first ready ticket (bd ready) for handoff to PLANNING.
+      </action>
+    </actions>
+    <note>
+      This push contains only beads metadata (ticket definitions, dependencies).
+      It is distinct from the implementation push — no code changes are included.
+    </note>
+    <on-success>Proceed to PLANNING</on-success>
+    <on-failure>Stop and report the failure to the human</on-failure>
   </phase>
 
 </lifecycle>

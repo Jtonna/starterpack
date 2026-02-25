@@ -39,7 +39,7 @@
       </flow>
       <rules>
         <rule name="child-commits-to-epic-branch">All child tickets commit to the epic branch, not their own branches</rule>
-        <rule name="child-plan-and-implement-only">Each child ticket runs planning and implementation only (no documentation review or pull request)</rule>
+        <rule name="child-plan-and-implement-only">Each child ticket runs planning and implementation only — no standalone docs review or pull request per child</rule>
         <rule name="docs-review-runs-once">Documentation review runs once after all children are complete, diffing the full epic branch against main</rule>
         <rule name="pr-runs-once">A single pull request is opened at the end for the entire epic, after documentation review</rule>
         <rule name="epic-closed-last">The epic ticket is closed only after all children are closed and the pull request is merged</rule>
@@ -54,11 +54,11 @@
 
   <section name="strategy-selection">
     <strategy-selection>
-      The orchestrator determines the strategy during entry routing:
-      - Spec file entry → FEATURE_BRANCHING (always)
+      Strategy selection criteria:
+      - Spec file → FEATURE_BRANCHING (always)
       - Existing ticket with type "epic" → FEATURE_BRANCHING
       - Existing ticket with any other type → TRUNK_BASED
-      - Ad-hoc request → TRUNK_BASED (unless planning reveals it should be an epic)
+      - Ad-hoc request → TRUNK_BASED (unless scope grows to require an epic)
     </strategy-selection>
   </section>
 
@@ -69,7 +69,7 @@
   <section name="branch-naming">
     <rule name="no-direct-main-commits">Never commit directly to main</rule>
     <rule name="all-commits-on-feature-branch">All commits happen on the feature/epic branch</rule>
-    <rule name="orchestrator-creates-branch">The orchestrator creates the branch before any commits are made</rule>
+    <rule name="branch-created-first">The working branch must be created before any other work begins</rule>
 
     <issue-type-to-branch>
       <type name="feature" branch-prefix="FEAT/" />
@@ -108,17 +108,23 @@
        ═══════════════════════════════════════════════════════════════════════ -->
 
   <section name="push-discipline">
-    <rule name="only-orchestrator-pushes">
-      Teammates NEVER push directly. Only the orchestrator pushes, and only after human
-      approval. This ensures unapproved work never reaches the remote.
+    <rule name="single-push-authority">
+      Only one agent pushes to the remote, and only after human approval.
+      This ensures unapproved work never reaches the remote.
+    </rule>
+    <rule name="push-after-ticket-creation">
+      After ticket creation and branch setup: beads metadata (.beads/ files) is committed
+      to the new branch and pushed to remote. This is a metadata-only push — no code
+      changes are included. It ensures the ticket state is preserved on the remote
+      before any further work begins.
     </rule>
     <rule name="push-after-implementation-approval">
-      After human approval following implementation: the orchestrator pushes the branch to remote
-      before handing off to the next phase. This is a single push covering all teammate commits.
+      After human approval following implementation: the branch is pushed to remote
+      before handing off to the next phase. This is a single push covering all commits.
     </rule>
     <rule name="push-before-pr">
-      After human approval before opening the pull request: the submitter pushes any remaining
-      commits (from documentation updates or ticket closure) and creates the pull request.
+      After human approval before opening the pull request: any remaining commits
+      (from documentation updates or ticket closure) are pushed and the pull request is created.
     </rule>
     <rule name="no-force-push">Never force-push unless the human explicitly requests it</rule>
   </section>
