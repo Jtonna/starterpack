@@ -15,33 +15,42 @@ Arguably the most important part is a structured workflow to create new behavior
 ### Prerequisites
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
-- [Beads CLI](https://github.com/cosmix/beads) installed (`v0.49.5+`)
+- [Beads CLI](https://github.com/steveyegge/beads) installed (`v0.56.1+`)
+- [Dolt](https://github.com/dolthub/dolt) installed (Beads v0.56+ uses Dolt as its database backend)
 - A GitHub repo with Actions enabled
 
 ### Install
 
-```powershell
-irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads
 ```
 
-The installer will check for an initialized Beads database. If you don't have one yet, pass `-InitBeads` and the installer will run `bd init` for you:
+Without `--init-beads` (if Beads is already initialized):
 
-```powershell
-$env:STARTERPACK_INIT_BEADS = "1"; irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash
 ```
 
-By default the installer auto-commits the starterpack files. If you'd rather commit manually, pass `-NoCommit`:
+Pin a specific version:
 
-```powershell
-$env:STARTERPACK_NO_COMMIT = "1"; irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --version v0.7.8
 ```
 
-To pin a specific version:
+Skip auto-commit:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads --no-commit
+```
+
+<details>
+<summary>PowerShell alternative</summary>
 
 ```powershell
-$env:STARTERPACK_VERSION = "v1.0.0"
-irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 -OutFile $env:TEMP\sp.ps1; & $env:TEMP\sp.ps1 -InitBeads
 ```
+
+</details>
 
 ### Start Claude Code
 
@@ -117,7 +126,7 @@ Edit the roles section in `MODELS_AND_ROLES.xml` to change model assignments. Bu
 
 ## Beads Sync to GitHub Issues
 
-The starterpack uses [Beads](https://github.com/cosmix/beads) for ticket tracking. Every change is tied to a ticket, no exceptions.
+The starterpack uses [Beads](https://github.com/steveyegge/beads) for ticket tracking. Every change is tied to a ticket, no exceptions.
 
 Beads is a git-tracked issue database that lives in `.beads/` inside your repo. A GitHub Actions workflow (`.github/workflows/beads-sync.yml`) syncs beads issues to GitHub Issues on every push that modifies the beads database.
 
