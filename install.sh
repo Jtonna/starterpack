@@ -468,6 +468,17 @@ if [ "$NO_COMMIT" != "1" ]; then
                 fi
                 if git commit -m "chore: $commit_action" 2>/dev/null; then
                     echo -e "  ${GREEN}[ok] Committed: chore: $commit_action${RESET}"
+                    # Push if on main branch, warn otherwise
+                    current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+                    if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+                        if git push 2>/dev/null; then
+                            echo -e "  ${GREEN}[ok] Pushed to $current_branch${RESET}"
+                        else
+                            echo -e "  ${YELLOW}[warn] git push failed - push manually${RESET}"
+                        fi
+                    else
+                        echo -e "  ${YELLOW}[warn] Not on main branch ($current_branch) - skipping push. Push manually when ready.${RESET}"
+                    fi
                 else
                     echo -e "  ${YELLOW}[warn] git commit failed - commit manually${RESET}"
                 fi
