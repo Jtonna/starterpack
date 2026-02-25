@@ -130,7 +130,7 @@
   </phase>
 
   <phase name="BRANCH_AND_PUSH" order="4">
-    <actor>Orchestrator (reasoning tier)</actor>
+    <actor>Orchestrator launches a branch setup agent (light tier)</actor>
     <actions>
       <action>
         If a feature branch was selected as the base branch:

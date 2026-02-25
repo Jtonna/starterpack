@@ -98,7 +98,7 @@
     </phase>
 
     <phase name="PUSH" order="6">
-      <actor>Orchestrator (reasoning tier, Team Lead)</actor>
+      <actor>Orchestrator launches a push agent (light tier)</actor>
       <actions>
         <action>Push the branch to remote: git push -u origin {branch-name}</action>
         <action>Confirm the push succeeded before transitioning</action>
