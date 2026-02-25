@@ -41,14 +41,14 @@
     <phase name="SUBMIT" order="3">
       <actor>Orchestrator launches a Submitter agent (light tier)</actor>
       <actions>
-        <action>Push any remaining commits to remote (doc updates, beads changes)</action>
-        <action>Create the PR via "gh pr create"</action>
         <action>
           Close the beads ticket with a close_reason summarizing what was done.
           TRUNK_BASED: close the single ticket.
           FEATURE_BRANCHING: close the epic ticket (all children should already be closed).
         </action>
-        <action>Commit the beads closure on the branch before the PR merges</action>
+        <action>Commit the beads closure to the branch</action>
+        <action>Push all remaining commits to remote (doc updates, beads closure)</action>
+        <action>Create the PR via "gh pr create"</action>
         <action>Report the PR URL back to the orchestrator</action>
       </actions>
       <on-success>Proceed to HANDOFF</on-success>

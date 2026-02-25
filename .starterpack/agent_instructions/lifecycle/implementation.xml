@@ -125,8 +125,9 @@
           TRUNK_BASED: proceed to DOCS.
         </action>
         <action>
-          FEATURE_BRANCHING: close the child ticket, pick the next ready child,
-          or proceed to DOCS if all children are complete.
+          FEATURE_BRANCHING: close the child ticket, commit the beads closure to
+          the branch, then pick the next ready child or proceed to DOCS if all
+          children are complete.
         </action>
       </actions>
       <on-success>Lifecycle complete. Proceed to DOCS.</on-success>
