@@ -31,7 +31,7 @@ else
     RED='' GREEN='' YELLOW='' CYAN='' RESET=''
 fi
 
-# ── Manifest — must match install.ps1 EXACTLY ───────────────────────────────
+# ── Manifest ─────────────────────────────────────────────────────────────────
 MANIFEST=(
     "CLAUDE.md"
     ".gitattributes"
@@ -126,6 +126,12 @@ fetch() {
         echo -e "${RED}ERROR: Neither curl nor wget found.${RESET}" >&2
         exit 1
     fi
+}
+
+# ── Helper: test if a TCP port is open ──────────────────────────────────────
+port_is_open() {
+    local host="$1" port="$2"
+    (echo >/dev/tcp/"$host"/"$port") 2>/dev/null
 }
 
 # ── Temp directory with cleanup trap ─────────────────────────────────────────
@@ -236,6 +242,50 @@ if [ "$beads_initialized" = false ]; then
         echo ""
         exit 1
     fi
+
+    # ── Dolt server bootstrap ─────────────────────────────────────────────
+    DOLT_HOST="127.0.0.1"
+    DOLT_PORT="3307"
+    DOLT_DB_DIR="$HOME/dolt-db"
+
+    if ! port_is_open "$DOLT_HOST" "$DOLT_PORT"; then
+        echo -e "${YELLOW}  Dolt server not detected on ${DOLT_HOST}:${DOLT_PORT}.${RESET}"
+        if [ "$DRY_RUN" = "1" ]; then
+            echo "[DRY RUN] Would bootstrap Dolt server at ${DOLT_DB_DIR}"
+        else
+            if [ ! -d "$DOLT_DB_DIR" ]; then
+                echo "  Creating Dolt database directory at ${DOLT_DB_DIR}..."
+                mkdir -p "$DOLT_DB_DIR"
+                if ! (cd "$DOLT_DB_DIR" && dolt init); then
+                    echo -e "${RED}  ERROR: dolt init failed at ${DOLT_DB_DIR}.${RESET}" >&2
+                    exit 1
+                fi
+                echo -e "${GREEN}  [ok] Dolt database initialized at ${DOLT_DB_DIR}.${RESET}"
+            else
+                echo "  Dolt database directory already exists at ${DOLT_DB_DIR}."
+            fi
+
+            echo "  Starting Dolt server on ${DOLT_HOST}:${DOLT_PORT}..."
+            (cd "$DOLT_DB_DIR" && dolt sql-server --host "$DOLT_HOST" --port "$DOLT_PORT" \
+                >/dev/null 2>&1 &)
+
+            dolt_wait=0
+            dolt_max=15
+            while ! port_is_open "$DOLT_HOST" "$DOLT_PORT"; do
+                if [ "$dolt_wait" -ge "$dolt_max" ]; then
+                    echo -e "${RED}  ERROR: Dolt server did not start within ${dolt_max}s.${RESET}" >&2
+                    echo -e "${YELLOW}  Start it manually:  cd ${DOLT_DB_DIR} && dolt sql-server --port ${DOLT_PORT}${RESET}" >&2
+                    exit 1
+                fi
+                sleep 1
+                dolt_wait=$((dolt_wait + 1))
+            done
+            echo -e "${GREEN}  [ok] Dolt server is running on ${DOLT_HOST}:${DOLT_PORT}.${RESET}"
+        fi
+    else
+        echo -e "${GREEN}  [ok] Dolt server already running on ${DOLT_HOST}:${DOLT_PORT}.${RESET}"
+    fi
+
     if [ "$DRY_RUN" = "1" ]; then
         echo "[DRY RUN] Would run: bd init (Beads not yet initialized)"
     else
@@ -444,6 +494,7 @@ if [ "$NO_COMMIT" != "1" ]; then
                 ".gitattributes"
                 ".claude/"
                 ".github/"
+                ".gitignore"
             )
             if [ -d ".beads/" ]; then
                 files_to_stage+=(".beads/")

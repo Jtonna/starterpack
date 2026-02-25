@@ -16,7 +16,7 @@ Arguably the most important part is a structured workflow to create new behavior
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
 - [Beads CLI](https://github.com/steveyegge/beads) installed (`v0.56.1+`)
-- [Dolt](https://github.com/dolthub/dolt) installed (Beads v0.56+ uses Dolt as its database backend)
+- [Dolt](https://github.com/dolthub/dolt) installed (the installer auto-starts a Dolt server when using `--init-beads`)
 - A GitHub repo with Actions enabled
 
 ### Install
@@ -43,14 +43,7 @@ Skip auto-commit:
 curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads --no-commit
 ```
 
-<details>
-<summary>PowerShell alternative</summary>
-
-```powershell
-irm https://raw.githubusercontent.com/Jtonna/starterpack/main/install.ps1 -OutFile $env:TEMP\sp.ps1; & $env:TEMP\sp.ps1 -InitBeads
-```
-
-</details>
+> **Note:** `--init-beads` automatically creates a Dolt database at `~/dolt-db`, starts `dolt sql-server` on `127.0.0.1:3307`, and initializes Beads. No manual Dolt setup required.
 
 ### Start Claude Code
 
