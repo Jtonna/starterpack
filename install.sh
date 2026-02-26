@@ -412,7 +412,55 @@ with open('$settings_file', 'w') as f:
 
 merge_agent_teams "$settings_path"
 
-# ── Step 8: Install git hooks ───────────────────────────────────────────────
+# ── Step 8: Ensure critical paths are not gitignored ────────────────────────
+if [ -f ".gitignore" ]; then
+    # Test representative files from each critical path
+    critical_paths=(
+        ".beads/issues.jsonl"
+        ".starterpack/VERSION"
+        ".claude/settings.local.json"
+        ".github/workflows/beads-sync.yml"
+        "CLAUDE.md"
+        ".gitattributes"
+    )
+
+    ignored_paths=()
+    for path in "${critical_paths[@]}"; do
+        # git check-ignore returns 0 if the file IS ignored
+        if git check-ignore --no-index "$path" >/dev/null 2>&1; then
+            ignored_paths+=("$path")
+        fi
+    done
+
+    if [ ${#ignored_paths[@]} -gt 0 ]; then
+        if [ "$DRY_RUN" = "1" ]; then
+            echo -e "  ${YELLOW}[DRY RUN] Would append negation patterns to .gitignore (${#ignored_paths[@]} paths currently ignored)${RESET}"
+        else
+            # Append negation patterns to .gitignore
+            cat >> .gitignore <<'EOF'
+
+# starterpack — these paths must be tracked by git
+!.beads/
+!.beads/**
+!.starterpack/
+!.starterpack/**
+!.claude/
+!.claude/**
+!.github/
+!.github/**
+!CLAUDE.md
+!.gitattributes
+EOF
+            echo -e "  ${GREEN}[ok] .gitignore updated with negation patterns (${#ignored_paths[@]} paths were ignored)${RESET}"
+        fi
+    else
+        echo -e "  ${GREEN}[ok] .gitignore check passed (critical paths not ignored)${RESET}"
+    fi
+else
+    echo -e "  ${YELLOW}[skip] No .gitignore found${RESET}"
+fi
+
+# ── Step 9: Install git hooks ───────────────────────────────────────────────
 if [ -d ".git" ]; then
     # Install all beads hooks
     if command -v bd >/dev/null 2>&1; then
@@ -439,7 +487,7 @@ if [ -d ".git" ]; then
     fi
 fi
 
-# ── Step 9: Auto-commit ─────────────────────────────────────────────────────
+# ── Step 10: Auto-commit ────────────────────────────────────────────────────
 if [ "$NO_COMMIT" != "1" ]; then
     if [ ! -d ".git" ]; then
         echo -e "  ${YELLOW}[skip] Not a git repository - skipping commit${RESET}"
@@ -466,6 +514,7 @@ if [ "$NO_COMMIT" != "1" ]; then
                 ".gitattributes"
                 ".claude/"
                 ".github/"
+                ".gitignore"
             )
             if [ -d ".beads/" ]; then
                 files_to_stage+=(".beads/")
@@ -506,7 +555,7 @@ if [ "$NO_COMMIT" != "1" ]; then
     fi
 fi
 
-# ── Step 10: Post-install checks ────────────────────────────────────────────
+# ── Step 11: Post-install checks ────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}Installed starterpack $resolved_version ($copied files)${RESET}"
 if [ "$skipped" -gt 0 ]; then
