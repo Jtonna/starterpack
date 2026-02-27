@@ -48,6 +48,7 @@ MANIFEST=(
     ".starterpack/agent_instructions/behaviors/response-format.xml"
     ".starterpack/agent_instructions/behaviors/create-behavior.xml"
     ".starterpack/agent_instructions/behaviors/create-lifecycle.xml"
+    ".starterpack/agent_instructions/behaviors/ci-gate.xml"
     ".starterpack/agent_instructions/lifecycle/entry.xml"
     ".starterpack/agent_instructions/lifecycle/planning.xml"
     ".starterpack/agent_instructions/lifecycle/implementation.xml"
