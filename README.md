@@ -88,6 +88,10 @@ Every ticket goes through five phases, with a human gate at every transition:
 
 The orchestrator (main Claude Code instance) never writes code, never reviews code, never touches files. It reads tickets, launches agents, and talks to you.
 
+### On-demand lifecycles
+
+Not every ticket follows the standard five-phase flow. On-demand lifecycles are alternative entry points registered in the manifest with `on-demand="true"`. They run independently and can feed back into the standard workflow. For example, `NIGHTLY_AUTONOMOUS_RUN` is a pre-flight gate for tickets labeled `autonomously-nightly` — it assesses whether the ticket has enough information for an AI agent to execute autonomously, then either activates autonomous mode on the standard workflow or posts clarifying questions on the GitHub issue and exits.
+
 ## About MODELS_AND_ROLES.xml
 
 This is the system configuration file for who does what at which model tier. The orchestrator reads it at startup alongside the manifests.
