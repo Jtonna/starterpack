@@ -1,4 +1,4 @@
-<lifecycle name="AUTONOMOUS_NIGHTLY">
+<lifecycle name="NIGHTLY_AUTONOMOUS_RUN">
 
   <summary>
     On-demand pre-flight gate for tickets labeled autonomously-nightly. Acts as an
@@ -7,7 +7,7 @@
   </summary>
 
   <uses-behavior name="autonomous-nightly" />
-  <uses-behavior name="response-format" lifecycle="AUTONOMOUS_NIGHTLY" />
+  <uses-behavior name="response-format" lifecycle="NIGHTLY_AUTONOMOUS_RUN" />
 
   <loop>
     <!--
