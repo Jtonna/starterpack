@@ -33,7 +33,7 @@ fi
 
 # ── Manifest ─────────────────────────────────────────────────────────────────
 MANIFEST=(
-    "CLAUDE.md"
+    ".starterpack/CLAUDE.md"
     ".gitattributes"
     ".starterpack/agent_instructions/BEHAVIORS_MANIFEST.xml"
     ".starterpack/agent_instructions/LIFECYCLE_MANIFEST.xml"
@@ -340,6 +340,14 @@ for file in "${MANIFEST[@]}"; do
     echo -e "  ${GREEN}[ok] $file${RESET}"
     copied=$((copied + 1))
 done
+
+# ── Step 5b: Install CLAUDE.md to project root ──────────────────────────────
+# The starterpack stores CLAUDE.md inside .starterpack/, but Claude Code
+# reads project instructions from the repo root.
+if [ -f ".starterpack/CLAUDE.md" ]; then
+    cp -f ".starterpack/CLAUDE.md" "./CLAUDE.md"
+    echo -e "  ${GREEN}[ok] CLAUDE.md (copied to project root)${RESET}"
+fi
 
 # ── Step 6: Write version file ──────────────────────────────────────────────
 printf '%s' "$resolved_version" > "$VERSION_FILE"
