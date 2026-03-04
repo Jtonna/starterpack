@@ -15,50 +15,51 @@
   │  <session-start> Read LIFECYCLE_MANIFEST → BEHAVIORS_MANIFEST → MODELS_AND_    │
   │                  ROLES → bd init → bd ready                                    │
   │                                                                                │
-  │  WARNING: APPLIES TO ALL AGENTS (orchestrator + teammates) — ROOT CAUSE OF BUG │
+  │  <agent-routing> Teammates skip orchestrator role + session-start tasks        │
+  │  <dispatch-mode> Nightly uses blocking sub-agents; interactive uses Teams      │
   └─────────────────────────────────────────────────────────────────────────────────┘
                                         │
-          ┌─────────────────────────────┼─────────────────────────────┐
-          │                             │                             │
-          v                             v                             v
-  ┌───────────────┐           ┌─────────────────┐          ┌─────────────────────┐
-  │ NIGHTLY AUTO  │           │  INTERACTIVE     │          │  ACS CRON           │
-  │ (on-demand)   │           │  (human starts)  │          │  (scheduled)        │
-  └───────┬───────┘           └────────┬────────┘          └─────────┬───────────┘
-          │                            │                             │
-          v                            │                             │
-  ┌───────────────┐                    │                             │
-  │ DETECT        │                    │                             │
-  │ bd show → bd  │                    │                             │
-  │ label list    │                    │                             │
-  │ has nightly?  │                    │                             │
-  │  no → EXIT    │                    │                             │
-  │  err → EXIT   │                    │                             │
-  └───────┬───────┘                    │                             │
-          │ yes                        │                             │
-          v                            │                             │
-  ┌───────────────┐                    │                             │
-  │ ASSESS        │                    │                             │
-  │ ticket info   │                    │                             │
-  │ sufficient?   │                    │                             │
-  └──┬─────┬──────┘                    │                             │
-     │     │                           │                             │
-     │     v                           │                             │
-     │  ┌──────────────┐               │                             │
-     │  │ROUTE_INCOMPLETE│             │                             │
-     │  │post questions │              │                             │
-     │  │tag owner      │              │                             │
-     │  │→ EXIT         │              │                             │
-     │  └──────────────┘               │                             │
-     │ COMPLETE                        │                             │
-     v                                 │                             │
-  ┌───────────────┐                    │                             │
-  │ROUTE_COMPLETE │                    │                             │
-  │auto-approve   │                    │                             │
-  │all gates      │                    │                             │
-  └───────┬───────┘                    │                             │
-          │                            │                             │
-          └────────────────────────────┼─────────────────────────────┘
+          ┌─────────────────────────────┤
+          │                             │
+          v                             v
+  ┌───────────────┐           ┌─────────────────┐
+  │ NIGHTLY AUTO  │           │  INTERACTIVE     │
+  │ (on-demand)   │           │  (human starts)  │
+  └───────┬───────┘           └────────┬────────┘
+          │                            │
+          v                            │
+  ┌───────────────┐                    │
+  │ DETECT        │                    │
+  │ bd show → bd  │                    │
+  │ label list    │                    │
+  │ has nightly?  │                    │
+  │  no → EXIT    │                    │
+  │  err → EXIT   │                    │
+  └───────┬───────┘                    │
+          │ yes                        │
+          v                            │
+  ┌───────────────┐                    │
+  │ ASSESS        │                    │
+  │ ticket info   │                    │
+  │ sufficient?   │                    │
+  └──┬─────┬──────┘                    │
+     │     │                           │
+     │     v                           │
+     │  ┌──────────────┐               │
+     │  │ROUTE_INCOMPLETE│             │
+     │  │post questions │              │
+     │  │tag owner      │              │
+     │  │→ EXIT         │              │
+     │  └──────────────┘               │
+     │ COMPLETE                        │
+     v                                 │
+  ┌───────────────┐                    │
+  │ROUTE_COMPLETE │                    │
+  │auto-approve   │                    │
+  │all gates      │                    │
+  └───────┬───────┘                    │
+          │                            │
+          └────────────────────────────┤
                                        │
                                        v
 ╔═════════════════════════════════════════════════════════════════════════════════════╗
@@ -113,7 +114,8 @@
                                                                          │
                                v─────────────────────────────────────────┘
 ╔═════════════════════════════════════════════════════════════════════════════════════╗
-║  IMPLEMENTATION LIFECYCLE  -- ONLY PHASE USING AGENT TEAMS                         ║
+║  IMPLEMENTATION LIFECYCLE                                                          ║
+║  Interactive: Agent Teams (TeamCreate) | Nightly: blocking Task sub-agents         ║
 ║                                                                                    ║
 ║  ┌──────────┐     ┌──────────────────────────────────────────────┐                 ║
 ║  │ LAUNCH   │────→│ DISPATCH                                     │                 ║
@@ -123,10 +125,6 @@
 ║  │ Team     │     │    light    → haiku  (light-implementer)     │                 ║
 ║  └──────────┘     │    standard → sonnet (implementer)           │                 ║
 ║                   │    complex  → opus   (implementer)           │                 ║
-║                   │                                              │                 ║
-║                   │  BUG: Teammates load CLAUDE.md               │                 ║
-║                   │  Haiku teammates adopt orchestrator role     │                 ║
-║                   │  Refuse to write code → DEADLOCK             │                 ║
 ║                   └────────────┬─────────────────────────────────┘                 ║
 ║                                │                                                   ║
 ║                                v                                                   ║
@@ -219,7 +217,8 @@
 ║  └─────────────────┴────────────┴──────────────────────────────────────────────┘    ║
 ║                                                                                    ║
 ║  Key: Task tool sub-agents = standard Claude Code sub-agents                       ║
-║       Agent Team teammates = experimental Agent Teams (IMPLEMENTATION only)         ║
+║       Agent Team teammates = Agent Teams (IMPLEMENTATION, interactive mode)         ║
+║       Nightly mode uses blocking Task sub-agents instead of Agent Teams             ║
 ║       HUMAN_GATE = hard block, or auto-approved in nightly mode                    ║
 ╚════════════════════════════════════════════════════════════════════════════════════╝
 ```

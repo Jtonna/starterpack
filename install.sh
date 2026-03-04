@@ -7,7 +7,19 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads
 #
-#   # Install a specific version
+#   # Install latest prod release (default)
+#   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash
+#
+#   # Install latest dev/pre-release
+#   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --dev
+#
+#   # Install a specific prod version
+#   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --prod v1.2.0
+#
+#   # Install a specific dev version
+#   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --dev v1.2.0-dev.1
+#
+#   # Install any specific version (backwards compat)
 #   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --version v1.2.0
 #
 #   # Dry run
@@ -61,6 +73,7 @@ MANIFEST=(
     ".starterpack/hooks/pre-commit"
     ".starterpack/hooks/post-merge"
     ".github/workflows/beads-sync.yml"
+    ".github/workflows/check-starterpack.yml"
     ".github/scripts/beads-sync.sh"
     ".beads/.gitignore"
     ".claude/settings.local.json"
@@ -72,6 +85,7 @@ DRY_RUN="${STARTERPACK_DRYRUN:-0}"
 FORCE="${STARTERPACK_FORCE:-0}"
 INIT_BEADS="${STARTERPACK_INIT_BEADS:-0}"
 NO_COMMIT="${STARTERPACK_NO_COMMIT:-0}"
+CHANNEL="prod"
 
 # ── Parse flags ──────────────────────────────────────────────────────────────
 while [ $# -gt 0 ]; do
@@ -86,6 +100,24 @@ while [ $# -gt 0 ]; do
             INIT_BEADS=1; shift ;;
         --no-commit)
             NO_COMMIT=1; shift ;;
+        --dev|-dev)
+            CHANNEL="dev"
+            # If next arg looks like a version, consume it
+            if [ $# -gt 1 ] && echo "$2" | grep -qE '^v[0-9]'; then
+                VERSION="$2"; shift 2
+            else
+                VERSION="latest"; shift
+            fi
+            ;;
+        --prod|-prod)
+            CHANNEL="prod"
+            # If next arg looks like a version, consume it
+            if [ $# -gt 1 ] && echo "$2" | grep -qE '^v[0-9]'; then
+                VERSION="$2"; shift 2
+            else
+                VERSION="latest"; shift
+            fi
+            ;;
         -*)
             echo -e "${RED}Unknown flag: $1${RESET}" >&2; exit 1 ;;
         *)
@@ -143,46 +175,86 @@ trap cleanup EXIT
 # ── Step 1: Resolve version ─────────────────────────────────────────────────
 resolve_version() {
     local requested="$1"
+    local channel="${2:-prod}"
+
     if [ "$requested" != "latest" ]; then
-        if ! echo "$requested" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo -e "${RED}Invalid version format: $requested (expected v#.#.# e.g. v1.0.0)${RESET}" >&2
+        if ! echo "$requested" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo -e "${RED}Invalid version format: $requested (expected v#.#.# or v#.#.#-suffix e.g. v1.0.0, v1.0.0-dev.1)${RESET}" >&2
             exit 1
         fi
         echo "$requested"
         return
     fi
 
-    echo -e "${CYAN}Resolving latest release...${RESET}" >&2
-    local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
-    local response
-    if ! response=$(fetch "$api_url" 2>&1); then
-        if echo "$response" | grep -q "403"; then
-            echo -e "${RED}GitHub API rate limit hit. Set \$GITHUB_TOKEN or specify a version directly.${RESET}" >&2
-        elif echo "$response" | grep -q "404"; then
-            echo -e "${RED}No releases found. The starterpack repo may not have any tagged releases yet.${RESET}" >&2
-        else
-            echo -e "${RED}Failed to resolve latest release: $response${RESET}" >&2
+    # "latest" resolution depends on channel
+    if [ "$channel" = "dev" ]; then
+        echo -e "${CYAN}Resolving latest dev release...${RESET}" >&2
+        local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases"
+        local response
+        if ! response=$(fetch "$api_url" 2>&1); then
+            if echo "$response" | grep -q "403"; then
+                echo -e "${RED}GitHub API rate limit hit. Set \$GITHUB_TOKEN or specify a version directly.${RESET}" >&2
+            else
+                echo -e "${RED}Failed to fetch releases: $response${RESET}" >&2
+            fi
+            exit 1
         fi
-        exit 1
-    fi
 
-    # Extract tag_name from JSON — try jq, then python3, then grep
-    local tag=""
-    if command -v jq >/dev/null 2>&1; then
-        tag=$(echo "$response" | jq -r '.tag_name')
-    elif command -v python3 >/dev/null 2>&1; then
-        tag=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+        # Find the first pre-release tag
+        local tag=""
+        if command -v jq >/dev/null 2>&1; then
+            tag=$(echo "$response" | jq -r '[.[] | select(.prerelease == true)][0].tag_name')
+        elif command -v python3 >/dev/null 2>&1; then
+            tag=$(echo "$response" | python3 -c "
+import sys, json
+releases = json.load(sys.stdin)
+pre = [r for r in releases if r.get('prerelease')]
+print(pre[0]['tag_name'] if pre else '')
+")
+        else
+            # Fallback: grep for tags with a dash (pre-release suffix)
+            tag=$(echo "$response" | grep -oP '"tag_name"\s*:\s*"\Kv[0-9]+\.[0-9]+\.[0-9]+-[^"]+' | head -1 || true)
+        fi
+
+        if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            echo -e "${RED}No dev/pre-release versions found. Use --prod or specify a version with --version.${RESET}" >&2
+            exit 1
+        fi
+
+        echo -e "${GREEN}Latest dev release: $tag${RESET}" >&2
+        echo "$tag"
     else
-        tag=$(echo "$response" | grep -oP '"tag_name"\s*:\s*"\K[^"]+' || true)
-    fi
+        echo -e "${CYAN}Resolving latest release...${RESET}" >&2
+        local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
+        local response
+        if ! response=$(fetch "$api_url" 2>&1); then
+            if echo "$response" | grep -q "403"; then
+                echo -e "${RED}GitHub API rate limit hit. Set \$GITHUB_TOKEN or specify a version directly.${RESET}" >&2
+            elif echo "$response" | grep -q "404"; then
+                echo -e "${RED}No releases found. The starterpack repo may not have any tagged releases yet.${RESET}" >&2
+            else
+                echo -e "${RED}Failed to resolve latest release: $response${RESET}" >&2
+            fi
+            exit 1
+        fi
 
-    if [ -z "$tag" ] || [ "$tag" = "null" ]; then
-        echo -e "${RED}Failed to parse release tag from GitHub API response.${RESET}" >&2
-        exit 1
-    fi
+        local tag=""
+        if command -v jq >/dev/null 2>&1; then
+            tag=$(echo "$response" | jq -r '.tag_name')
+        elif command -v python3 >/dev/null 2>&1; then
+            tag=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+        else
+            tag=$(echo "$response" | grep -oP '"tag_name"\s*:\s*"\K[^"]+' || true)
+        fi
 
-    echo -e "${GREEN}Latest release: $tag${RESET}" >&2
-    echo "$tag"
+        if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            echo -e "${RED}Failed to parse release tag from GitHub API response.${RESET}" >&2
+            exit 1
+        fi
+
+        echo -e "${GREEN}Latest release: $tag${RESET}" >&2
+        echo "$tag"
+    fi
 }
 
 # ── Step 2: Check current version ───────────────────────────────────────────
@@ -196,7 +268,7 @@ get_current_version() {
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────
-resolved_version=$(resolve_version "$VERSION")
+resolved_version=$(resolve_version "$VERSION" "$CHANNEL")
 current_version=$(get_current_version)
 
 if [ "$current_version" = "$resolved_version" ] && [ "$FORCE" != "1" ]; then

@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag format
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid tag format: $TAG (expected v#.#.# or v#.#.#-suffix)"
+            exit 1
+          fi
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "label=Production release $TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "label=Pre-release $TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update VERSION file
+        run: printf '%s' "${GITHUB_REF_NAME}" > .starterpack/VERSION
+
+      - name: Commit VERSION update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Find the branch that contains this tag so we can push back
+          BRANCH=$(git branch -r --contains HEAD | grep -v 'HEAD' | head -1 | sed 's|origin/||;s/^[[:space:]]*//')
+          if [ -n "$BRANCH" ]; then
+            git checkout "$BRANCH"
+            printf '%s' "${GITHUB_REF_NAME}" > .starterpack/VERSION
+            git add .starterpack/VERSION
+            git diff --cached --quiet || git commit -m "chore: update VERSION to ${GITHUB_REF_NAME} [skip ci]"
+            git push origin "$BRANCH" || echo "::warning::Could not push VERSION update back to $BRANCH"
+          fi
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Find previous tag
+          PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | grep -v "^$TAG$" | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+            echo "## Changes since $PREV_TAG" > release_notes.md
+            echo "" >> release_notes.md
+            git log "$RANGE" --pretty=format:"- %s (%h)" --no-merges >> release_notes.md
+          else
+            echo "## Initial release" > release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s (%h)" --no-merges -20 >> release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PRERELEASE="${{ steps.release-type.outputs.prerelease }}"
+          FLAGS=""
+          if [ "$PRERELEASE" = "true" ]; then
+            FLAGS="--prerelease"
+          else
+            FLAGS="--latest"
+          fi
+          gh release create "$TAG" \
+            --title "${{ steps.release-type.outputs.label }}" \
+            --notes-file release_notes.md \
+            $FLAGS
