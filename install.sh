@@ -74,6 +74,16 @@ MANIFEST=(
     ".claude/settings.local.json"
 )
 
+# Files from previous versions that should be deleted on upgrade
+DEPRECATED=(
+    ".starterpack/agent_instructions/behaviors/git-with-beads.xml"
+    ".starterpack/beads_sync.md"
+    ".starterpack/hooks/pre-commit"
+    ".starterpack/hooks/post-merge"
+    ".github/workflows/beads-sync.yml"
+    ".github/scripts/beads-sync.sh"
+)
+
 # ── Defaults ─────────────────────────────────────────────────────────────────
 VERSION="${STARTERPACK_VERSION:-latest}"
 DRY_RUN="${STARTERPACK_DRYRUN:-0}"
@@ -298,6 +308,11 @@ if [ "$DRY_RUN" = "1" ]; then
         fi
     done
     echo -e "  ${GREEN}[create] $VERSION_FILE${RESET}"
+    for file in "${DEPRECATED[@]}"; do
+        if [ -e "$file" ]; then
+            echo -e "  ${RED}[delete] $file${RESET}"
+        fi
+    done
     echo ""
     echo -e "${YELLOW}[DRY RUN] No files were written.${RESET}"
     exit 0
@@ -346,6 +361,24 @@ for file in "${MANIFEST[@]}"; do
     cp -f "$source_path" "$dest_path"
     echo -e "  ${GREEN}[ok] $file${RESET}"
     copied=$((copied + 1))
+done
+
+# ── Step 5a: Remove deprecated files ─────────────────────────────────────────
+removed=0
+for file in "${DEPRECATED[@]}"; do
+    if [ -e "$file" ]; then
+        rm -f "$file"
+        echo -e "  ${RED}[removed] $file${RESET}"
+        removed=$((removed + 1))
+    fi
+done
+
+# Clean up empty parent dirs left behind (e.g. .starterpack/hooks/)
+for file in "${DEPRECATED[@]}"; do
+    parent=$(dirname "$file")
+    if [ -d "$parent" ] && [ -z "$(ls -A "$parent" 2>/dev/null)" ]; then
+        rmdir "$parent" 2>/dev/null || true
+    fi
 done
 
 # ── Step 5b: Install CLAUDE.md to project root ──────────────────────────────
@@ -553,7 +586,10 @@ fi
 
 # ── Step 11: Post-install checks ────────────────────────────────────────────
 echo ""
-echo -e "${GREEN}Installed starterpack $resolved_version ($copied files)${RESET}"
+echo -e "${GREEN}Installed starterpack $resolved_version ($copied files copied)${RESET}"
+if [ "$removed" -gt 0 ]; then
+    echo -e "${GREEN}  $removed deprecated files removed${RESET}"
+fi
 if [ "$skipped" -gt 0 ]; then
     echo -e "${YELLOW}  $skipped files skipped (not found in release)${RESET}"
 fi
