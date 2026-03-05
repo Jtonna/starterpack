@@ -5,8 +5,6 @@
 # the workflow files into the current project. Existing files are overwritten.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads
-#
 #   # Install latest prod release (default)
 #   curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash
 #
@@ -50,7 +48,7 @@ MANIFEST=(
     ".starterpack/agent_instructions/BEHAVIORS_MANIFEST.xml"
     ".starterpack/agent_instructions/LIFECYCLE_MANIFEST.xml"
     ".starterpack/agent_instructions/MODELS_AND_ROLES.xml"
-    ".starterpack/agent_instructions/behaviors/git-with-beads.xml"
+    ".starterpack/agent_instructions/behaviors/git-conventions.xml"
     ".starterpack/agent_instructions/behaviors/escalation.xml"
     ".starterpack/agent_instructions/behaviors/scope-enforcement.xml"
     ".starterpack/agent_instructions/behaviors/sub-task-tracking.xml"
@@ -69,13 +67,10 @@ MANIFEST=(
     ".starterpack/agent_instructions/lifecycle/pr.xml"
     ".starterpack/agent_instructions/lifecycle/authoring-behaviors-and-lifecycles.xml"
     ".starterpack/agent_instructions/lifecycle/nightly-autonomous-run.xml"
-    ".starterpack/beads_sync.md"
-    ".starterpack/hooks/pre-commit"
-    ".starterpack/hooks/post-merge"
-    ".github/workflows/beads-sync.yml"
+    ".github/workflows/comment-sync.yml"
     ".github/workflows/check-starterpack.yml"
-    ".github/scripts/beads-sync.sh"
-    ".beads/.gitignore"
+    ".github/scripts/comment-sync.sh"
+    ".github/comment-queue.json"
     ".claude/settings.local.json"
 )
 
@@ -83,7 +78,6 @@ MANIFEST=(
 VERSION="${STARTERPACK_VERSION:-latest}"
 DRY_RUN="${STARTERPACK_DRYRUN:-0}"
 FORCE="${STARTERPACK_FORCE:-0}"
-INIT_BEADS="${STARTERPACK_INIT_BEADS:-0}"
 NO_COMMIT="${STARTERPACK_NO_COMMIT:-0}"
 CHANNEL="prod"
 
@@ -96,8 +90,6 @@ while [ $# -gt 0 ]; do
             DRY_RUN=1; shift ;;
         --force)
             FORCE=1; shift ;;
-        --init-beads)
-            INIT_BEADS=1; shift ;;
         --no-commit)
             NO_COMMIT=1; shift ;;
         --dev|-dev)
@@ -294,60 +286,6 @@ if [ -f ".starterpack-version" ]; then
     fi
 fi
 
-# ── Beads prerequisite gate ──────────────────────────────────────────────────
-beads_initialized=false
-if [ -f ".beads/config.yaml" ] || [ -f ".beads/metadata.json" ]; then
-    beads_initialized=true
-fi
-
-if [ "$beads_initialized" = false ]; then
-    if [ "$INIT_BEADS" != "1" ]; then
-        echo ""
-        echo -e "${RED}  ERROR: Beads is not initialized in this project.${RESET}"
-        echo -e "${YELLOW}  The starterpack requires Beads for ticket tracking.${RESET}"
-        echo ""
-        echo -e "${YELLOW}  Re-run with --init-beads to auto-initialize:${RESET}"
-        echo -e "${CYAN}    curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads${RESET}"
-        echo ""
-        exit 1
-    fi
-    if ! command -v bd >/dev/null 2>&1; then
-        echo ""
-        echo -e "${RED}  ERROR: --init-beads was specified but 'bd' was not found on PATH.${RESET}"
-        echo -e "${YELLOW}  Install Beads from: https://github.com/steveyegge/beads${RESET}"
-        echo ""
-        exit 1
-    fi
-    # ── Beads version gate ────────────────────────────────────────────────
-    bd_version=$(bd version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-    bd_minor=$(echo "$bd_version" | cut -d. -f2)
-    if [ -z "$bd_version" ] || [ "$bd_minor" != "49" ]; then
-        echo ""
-        echo -e "${RED}  ERROR: beads v${bd_version:-unknown} is not supported.${RESET}"
-        echo -e "${YELLOW}  This starterpack requires beads v0.49.x (SQLite/JSONL backend).${RESET}"
-        echo -e "${YELLOW}  v0.50+ switched to Dolt which breaks cross-device sync via git.${RESET}"
-        echo -e "${YELLOW}  Install v0.49.6: https://github.com/steveyegge/beads/releases/tag/v0.49.6${RESET}"
-        echo ""
-        exit 1
-    fi
-
-    if [ "$DRY_RUN" = "1" ]; then
-        echo "[DRY RUN] Would run: bd init (Beads not yet initialized)"
-    else
-        echo "  Initializing Beads..."
-        if ! bd init; then
-            echo -e "${RED}  ERROR: bd init failed.${RESET}"
-            echo -e "${YELLOW}  Run 'bd init' manually, then re-run the installer.${RESET}"
-            exit 1
-        fi
-        echo -e "${GREEN}  [ok] Beads initialized successfully.${RESET}"
-        # bd init creates an AGENTS.md that conflicts with the starterpack setup — discard it
-        if [ -f "AGENTS.md" ]; then
-            rm -f "AGENTS.md"
-        fi
-    fi
-fi
-
 # ── Dry run preview ─────────────────────────────────────────────────────────
 if [ "$DRY_RUN" = "1" ]; then
     echo ""
@@ -388,9 +326,6 @@ if [ -z "$extracted_root" ]; then
 fi
 
 # ── Step 5: Copy manifest files ─────────────────────────────────────────────
-# IMPORTANT: Upgrades replace all starterpack files EXCEPT beads data.
-# The .beads/issues.jsonl and .beads/ SQLite DB are project-specific and
-# must never be overwritten. The manifest only lists safe-to-replace files.
 copied=0
 skipped=0
 for file in "${MANIFEST[@]}"; do
@@ -499,10 +434,9 @@ merge_agent_teams "$settings_path"
 if [ -f ".gitignore" ]; then
     # Test representative files from each critical path
     critical_paths=(
-        ".beads/issues.jsonl"
         ".starterpack/VERSION"
         ".claude/settings.local.json"
-        ".github/workflows/beads-sync.yml"
+        ".github/workflows/comment-sync.yml"
         "CLAUDE.md"
         ".gitattributes"
     )
@@ -523,8 +457,6 @@ if [ -f ".gitignore" ]; then
             cat >> .gitignore <<'EOF'
 
 # starterpack — these paths must be tracked by git
-!.beads/
-!.beads/**
 !.starterpack/
 !.starterpack/**
 !.claude/
@@ -543,31 +475,15 @@ else
     echo -e "  ${YELLOW}[skip] No .gitignore found${RESET}"
 fi
 
-# ── Step 9: Install git hooks ───────────────────────────────────────────────
-if [ -d ".git" ]; then
-    # Install all beads hooks
-    if command -v bd >/dev/null 2>&1; then
-        if bd hooks install --force 2>/dev/null; then
-            hooks_msg="pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg"
-            echo -e "  ${GREEN}[ok] Beads hooks installed ($hooks_msg)${RESET}"
-        else
-            echo -e "  ${YELLOW}[warn] bd hooks install failed - run 'bd hooks install' manually${RESET}"
+# ── Step 9: Clean up legacy beads hooks ──────────────────────────────────────
+if [ -d ".git/hooks" ]; then
+    for hook in pre-commit post-merge; do
+        hook_path=".git/hooks/$hook"
+        if [ -f "$hook_path" ] && grep -q "beads\|\.beads\|bd " "$hook_path" 2>/dev/null; then
+            rm -f "$hook_path"
+            echo -e "  ${GREEN}[ok] Removed legacy beads hook: .git/hooks/$hook${RESET}"
         fi
-    fi
-
-    # Overlay starterpack custom hooks (enhanced post-merge with worktree support and auto-commit)
-    hooks_source_dir=".starterpack/hooks"
-    git_hooks_dir=".git/hooks"
-    if [ -d "$hooks_source_dir" ]; then
-        for hook_file in "$hooks_source_dir"/*; do
-            [ -f "$hook_file" ] || continue
-            hook_name=$(basename "$hook_file")
-            dest_hook="$git_hooks_dir/$hook_name"
-            cp -f "$hook_file" "$dest_hook"
-            chmod +x "$dest_hook"
-            echo -e "  ${GREEN}[ok] .git/hooks/$hook_name (starterpack override)${RESET}"
-        done
-    fi
+    done
 fi
 
 # ── Step 10: Auto-commit ────────────────────────────────────────────────────
@@ -599,9 +515,6 @@ if [ "$NO_COMMIT" != "1" ]; then
                 ".github/"
                 ".gitignore"
             )
-            if [ -d ".beads/" ]; then
-                files_to_stage+=(".beads/")
-            fi
             for f in "${files_to_stage[@]}"; do
                 if [ -e "$f" ]; then
                     git add -- "$f" 2>/dev/null || true
@@ -649,28 +562,8 @@ echo ""
 # Check prerequisites
 warnings=()
 
-if ! command -v bd >/dev/null 2>&1; then
-    warnings+=("Beads CLI (bd) not found. Install from: https://github.com/steveyegge/beads")
-fi
-
-if command -v bd >/dev/null 2>&1; then
-    bd_ver=$(bd version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-    bd_min=$(echo "$bd_ver" | cut -d. -f2)
-    if [ -n "$bd_ver" ] && [ "$bd_min" != "49" ]; then
-        warnings+=("Beads v${bd_ver} detected but v0.49.x is required. Install v0.49.6 from: https://github.com/steveyegge/beads/releases/tag/v0.49.6")
-    fi
-fi
-
 if ! command -v claude >/dev/null 2>&1; then
     warnings+=("Claude Code CLI not found. Install from: https://docs.anthropic.com/en/docs/claude-code")
-fi
-
-if ! command -v jq >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
-    warnings+=("Neither jq nor python3 found. The pre-commit hook needs one of these to flush beads issues to JSONL for GitHub sync.")
-fi
-
-if [ ! -f ".beads/config.yaml" ] && [ ! -f ".beads/metadata.json" ]; then
-    warnings+=("Beads not initialized. Run: bd init --prefix <your-prefix>-")
 fi
 
 if [ ${#warnings[@]} -gt 0 ]; then

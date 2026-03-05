@@ -13,7 +13,7 @@
   │                                                                                │
   │  <role> "You are an orchestrator. You do NOT write code..."                    │
   │  <session-start> Read LIFECYCLE_MANIFEST → BEHAVIORS_MANIFEST → MODELS_AND_    │
-  │                  ROLES → bd init → bd ready                                    │
+  │                  ROLES                                                         │
   │                                                                                │
   │  <agent-routing> Teammates skip orchestrator role + session-start tasks        │
   │  <dispatch-mode> Nightly uses blocking sub-agents; interactive uses Teams      │
@@ -30,8 +30,7 @@
           v                            │
   ┌───────────────┐                    │
   │ DETECT        │                    │
-  │ bd show → bd  │                    │
-  │ label list    │                    │
+  │ gh issue list │                    │
   │ has nightly?  │                    │
   │  no → EXIT    │                    │
   │  err → EXIT   │                    │
@@ -40,7 +39,7 @@
           v                            │
   ┌───────────────┐                    │
   │ ASSESS        │                    │
-  │ ticket info   │                    │
+  │ issue info    │                    │
   │ sufficient?   │                    │
   └──┬─────┬──────┘                    │
      │     │                           │
@@ -48,7 +47,7 @@
      │  ┌──────────────┐               │
      │  │ROUTE_INCOMPLETE│             │
      │  │post questions │              │
-     │  │tag owner      │              │
+     │  │via queue      │              │
      │  │→ EXIT         │              │
      │  └──────────────┘               │
      │ COMPLETE                        │
@@ -74,7 +73,7 @@
 ║     │   │                       v                                                  ║
 ║     │   │              ┌────────────────────┐                                      ║
 ║     │   └── AD_HOC ──→ │TICKET_AND_BRANCH   │  Orchestrator (opus)                 ║
-║     │                  │SETUP                │  Create tickets, select base branch  ║
+║     │                  │SETUP                │  Create issues, select base branch   ║
 ║     └── EXISTING ────→ │                    │                                      ║
 ║                        └──┬──────┬──────────┘                                      ║
 ║                           │      │                                                 ║
@@ -90,8 +89,8 @@
 ║                           │                        │                               ║
 ║                           v                        v                               ║
 ║                     ┌──────────────────┐                                           ║
-║                     │ BRANCH_AND_PUSH  │  light-tier sub-agent (haiku)             ║
-║                     │ git checkout -b  │  create branch, commit beads, push        ║
+║                     │ BRANCH_SETUP     │  light-tier sub-agent (haiku)             ║
+║                     │ git checkout -b  │  create branch, push                      ║
 ║                     │ git push         │                                           ║
 ║                     └────────┬─────────┘                                           ║
 ╚══════════════════════════════╪═════════════════════════════════════════════════════╝
@@ -104,7 +103,7 @@
 ║  │ INTAKE   │────→│ DRAFT    │────→│ REVIEW   │────→│HUMAN    │───→│ HANDOFF  │  ║
 ║  │          │     │          │     │          │     │  GATE    │    │          │  ║
 ║  │ Explorer │     │ Planner  │     │ Plan     │     │          │    │ Post plan│  ║
-║  │ (opus)   │     │ (opus)   │     │ Reviewer │     │ rejected │    │ to ticket│  ║
+║  │ (opus)   │     │ (opus)   │     │ Reviewer │     │ rejected │    │ to issue │  ║
 ║  │ read-only│     │ sub-tasks│     │ (opus)   │     │    │     │    │          │  ║
 ║  │          │     │ + complex│     │          │     │    └─────┼──→ │ DRAFT    │  ║
 ║  └──────────┘     │ ratings  │     └──────────┘     └──────────┘    └────┬─────┘  ║
@@ -183,9 +182,9 @@
 ║  │PREPARE_AND_     │──→│ CI_GATE  │──→│ HANDOFF                              │     ║
 ║  │SUBMIT           │   │ (haiku)  │   │                                      │     ║
 ║  │ (opus)          │   │          │   │  More children? ──→ PLANNING (loop)  │     ║
-║  │ close ticket    │   │ PASS ────┼─→ │  Feature branch done? ──→ FINAL_PR  │     ║
-║  │ push, create PR │   │ FAIL ──→ │   │  All done? ──→ COMPLETE             │     ║
-║  │                 │   │ fix+retry│   │                                      │     ║
+║  │ push, create PR │   │ PASS ────┼─→ │  Feature branch done? ──→ FINAL_PR  │     ║
+║  │ Closes #N or    │   │ FAIL ──→ │   │  All done? ──→ COMPLETE             │     ║
+║  │ Relates to #N   │   │ fix+retry│   │                                      │     ║
 ║  └────────────────┘   │ NONE ────┼─→ └──────────────────────────────────────┘     ║
 ║                        │ TIMEOUT→ │                                                ║
 ║                        │  human   │    ┌──────────┐    ┌──────────────┐             ║

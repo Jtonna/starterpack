@@ -6,7 +6,7 @@ A plug-and-play AI agent orchestration setup for [Claude Code](https://docs.anth
 
 One agent making a small mistake is fine. A swarm of agents all making small mistakes at the same time is not.
 
-I've been running agent swarms since December in crude, rudimentary forms. Claude Code finally offers an official solution, not as powerful, but far more convenient. That said, swarms have fundamental workflow structure problems; assumptions cascade into bad decisions, and as the gastown and ralph wiggums era showed, token burn is inefficient and context usage gets sloppy. This is my attempt at a solution I can actually live with. It reduces cascading failures, enforces stricter workflows based on my personal preferences, keeps the human in the loop, and provides enough pushback to counter ADHD vibe coding. It also solves some project management headaches by using Beads and syncing tickets to GitHub Issues.
+I've been running agent swarms since December in crude, rudimentary forms. Claude Code finally offers an official solution, not as powerful, but far more convenient. That said, swarms have fundamental workflow structure problems; assumptions cascade into bad decisions, and as the gastown and ralph wiggums era showed, token burn is inefficient and context usage gets sloppy. This is my attempt at a solution I can actually live with. It reduces cascading failures, enforces stricter workflows based on my personal preferences, keeps the human in the loop, and provides enough pushback to counter ADHD vibe coding. It also solves some project management headaches by tracking all work as GitHub Issues.
 
 Arguably the most important part is a structured workflow to create new behaviors and lifecycles, something ive had issues with across various solutions.
 
@@ -15,16 +15,9 @@ Arguably the most important part is a structured workflow to create new behavior
 ### Prerequisites
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
-- [Beads CLI](https://github.com/steveyegge/beads) v0.49.6 ([why?](#why-beads-v0496))
 - A GitHub repo with Actions enabled
 
 ### Install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads
-```
-
-Without `--init-beads` (if Beads is already initialized):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash
@@ -39,10 +32,8 @@ curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh 
 Skip auto-commit:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --init-beads --no-commit
+curl -fsSL https://raw.githubusercontent.com/Jtonna/starterpack/main/install.sh | bash -s -- --no-commit
 ```
-
-> **Note:** `--init-beads` automatically initializes the Beads issue tracker (SQLite/JSONL backend). No additional setup required.
 
 ### Start Claude Code
 
@@ -120,21 +111,16 @@ Cheaper models escalate up when they fail. A Haiku agent that gets stuck escalat
 
 Edit the roles section in `MODELS_AND_ROLES.xml` to change model assignments. Budget-conscious: set implementers to light with escalation to worker then reasoning. Max quality: set everything to reasoning.
 
-## Beads Sync to GitHub Issues
+## Comment Queue
 
-The starterpack uses [Beads](https://github.com/steveyegge/beads) for ticket tracking. Every change is tied to a ticket, no exceptions.
+The starterpack uses a comment queue (`.github/comment-queue.json`) to post comments on GitHub Issues as `github-actions[bot]` rather than the user's personal account. This is used by the nightly autonomous workflow to post clarification questions and progress updates.
 
-Beads is a git-tracked issue database that lives in `.beads/` inside your repo. A GitHub Actions workflow (`.github/workflows/beads-sync.yml`) syncs beads issues to GitHub Issues on every push that modifies the beads database.
+How it works:
 
-The sync is one-way (beads to GitHub) and branch-aware. On feature branches, it creates and updates GitHub Issues but defers closure. Issues get a `pending-close` label until the branch merges to main. On the default branch, it performs full sync including actual closure.
-
-Labels are applied automatically based on issue type and priority. If you have a GitHub Projects board, the sync can update that too.
-
-See `.starterpack/beads_sync.md` for the full details on trigger conditions, label mapping, deduplication, and configuration.
-
-## Why Beads v0.49.6
-
-The starterpack pins Beads to v0.49.6 because v0.50+ switched from SQLite to Dolt as the database backend. Dolt maintains its own version history separate from git, which means ticket data no longer syncs across devices via `git pull`. With v0.49.6, all issue data lives in `.beads/issues.jsonl` — a git-tracked file that syncs naturally when you push and pull.
+1. An agent appends `{"issue": 42, "body": "comment text"}` entries to `.github/comment-queue.json`
+2. On push, the `comment-sync` GitHub Actions workflow detects the change
+3. The workflow posts each queued comment via `gh issue comment` (appearing as `github-actions[bot]`)
+4. The queue is cleared to `[]` and committed with `[skip ci]` to prevent recursive triggers
 
 ## License
 
