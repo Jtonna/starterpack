@@ -175,4 +175,40 @@
 
   </section>
 
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PENDING-CLOSE LABEL
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="pending-close-label">
+
+    <rule name="LABEL_PURPOSE">
+      The "pending-close" label signals that an epic child issue has completed work
+      merged into the epic's feature branch, but the issue cannot close yet because
+      GitHub only auto-closes issues when a PR merges to the default branch (main).
+      The issue will auto-close when the final epic PR merges to main.
+    </rule>
+
+    <rule name="WHEN_TO_ADD">
+      Add the "pending-close" label to an issue after successfully merging a child
+      PR into an epic's feature branch (not main). Use:
+        gh issue edit {number} --add-label "pending-close"
+      This is performed by the PR lifecycle's HANDOFF phase when the PR targets
+      a feature branch.
+    </rule>
+
+    <rule name="DETECT_SKIP">
+      The DETECT phase must skip issues that carry the "pending-close" label.
+      These issues already have completed work — re-processing them would create
+      duplicate PRs.
+    </rule>
+
+    <rule name="LABEL_LIFECYCLE">
+      The "pending-close" label is transient:
+      - Added: after a child PR merges to the epic's feature branch.
+      - Removed: automatically becomes irrelevant when the epic's final PR merges
+        to main and GitHub auto-closes the issue. No explicit removal is needed.
+    </rule>
+
+  </section>
+
 </behavior>
