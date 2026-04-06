@@ -120,7 +120,7 @@ How it works:
 1. An agent appends `{"issue": 42, "body": "comment text"}` entries to `.github/comment-queue.json`
 2. On push, the `comment-sync` GitHub Actions workflow detects the change
 3. The workflow posts each queued comment via `gh issue comment` (appearing as `github-actions[bot]`)
-4. The queue is cleared to `[]` and committed with `[skip ci]` to prevent recursive triggers
+4. The queue is cleared to `[]` and committed — the early-exit guard in the script prevents recursive triggers by exiting when the queue is already empty
 
 ## License
 

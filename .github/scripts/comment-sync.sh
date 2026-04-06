@@ -4,7 +4,8 @@
 #
 # Reads .github/comment-queue.json (an array of {issue, body} objects),
 # posts each as a comment via `gh issue comment`, then resets the file
-# to [] and commits with [skip ci] to prevent recursive triggers.
+# to [] and commits normally. The early-exit guard prevents recursive triggers
+# by exiting when the queue is already empty.
 #
 # Required env vars:
 #   GH_TOKEN — GitHub token (set automatically in GitHub Actions)
@@ -65,7 +66,7 @@ git add "$QUEUE_FILE"
 if git diff --cached --quiet 2>/dev/null; then
   echo "No changes to commit (queue was already empty)."
 else
-  git commit -m "chore: clear comment queue [skip ci]"
+  git commit -m "chore: clear comment queue"
   git push
   echo "Queue cleared and pushed."
 fi
