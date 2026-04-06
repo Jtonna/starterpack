@@ -20,6 +20,10 @@
           |
           +~~ command failure ~~> [EXIT — report error]
           |
+          +~~ open issue found, has pending-close label ~~> skip issue, try next
+          |
+          +~~ open issue found, no open PR, but merged PR exists ~~> skip issue, try next
+          |
           +~~ open issue found, no open PR ~~> [Phase 2: ASSESS]
           |
           +~~ open issue found, open PR exists ~~> check PR/issue comments for follow-up
@@ -50,6 +54,11 @@
           Store the issue number, title, and body for subsequent phases.
         </action>
         <action>
+          Check if the issue has a "pending-close" label. If so, skip this issue
+          and move to the next oldest — work was already completed and is waiting
+          for the epic to merge to main.
+        </action>
+        <action>
           Check whether an open PR already exists for this issue:
             gh pr list --search "{number}" --state open --json number,title,url --limit 5
           If an open PR exists, the issue may have in-flight work. Check the PR
@@ -59,7 +68,19 @@
           If no actionable feedback is found, skip this issue and try the next oldest.
         </action>
         <action>
-          If no open PR exists, proceed directly to ASSESS.
+          If no open PR exists, check for merged PRs that reference this issue:
+            gh pr list --search "{number}" --state merged --json number,title,url --limit 5
+          If merged PRs exist, the work may already be complete:
+          - Check if the merged PR targeted a feature/epic branch (not main).
+            If so, the issue is an epic child with completed work waiting for the
+            epic to merge — skip this issue and move to the next oldest.
+          - If the merged PR targeted main, the issue should already be closed
+            (GitHub auto-closes on merge). If it's still open, proceed to ASSESS
+            as normal (the merged PR may have been unrelated).
+        </action>
+        <action>
+          If no open PR exists and no merged PRs indicate completed work,
+          proceed directly to ASSESS.
         </action>
       </actions>
       <on-success>Open issue found — proceed to ASSESS.</on-success>

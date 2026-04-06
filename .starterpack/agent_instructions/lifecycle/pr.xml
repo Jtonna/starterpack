@@ -87,6 +87,12 @@
     <actions>
       <action>Report PR URL to the human for review.</action>
       <action>
+        If the PR targeted a feature branch (not main), add the "pending-close"
+        label to the issue to signal that work is complete but the issue must
+        stay open until the epic's final PR merges to main:
+          gh issue edit {number} --add-label "pending-close"
+      </action>
+      <action>
         Check for remaining open child issues (gh issue list --state open --label {epic-label}).
         If more children exist: checkout the base branch, pick the next child
         issue, and loop to PLANNING for that child.
