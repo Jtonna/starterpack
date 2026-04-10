@@ -72,7 +72,7 @@ jobs:
 
       - name: Validate tag format
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.resolve-tag.outputs.tag }}"
           if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
             echo "::error::Invalid tag format: $TAG (expected v#.#.# or v#.#.#-suffix)"
             exit 1
@@ -81,7 +81,7 @@ jobs:
       - name: Determine release type
         id: release-type
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.resolve-tag.outputs.tag }}"
           if echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
             echo "label=Production release $TAG" >> "$GITHUB_OUTPUT"
@@ -91,7 +91,7 @@ jobs:
           fi
 
       - name: Update VERSION file
-        run: printf '%s' "${GITHUB_REF_NAME}" > .starterpack/VERSION
+        run: printf '%s' "${{ steps.resolve-tag.outputs.tag }}" > .starterpack/VERSION
 
       - name: Commit VERSION update
         run: |
@@ -101,16 +101,16 @@ jobs:
           BRANCH=$(git branch -r --contains HEAD | grep -v 'HEAD' | head -1 | sed 's|origin/||;s/^[[:space:]]*//')
           if [ -n "$BRANCH" ]; then
             git checkout "$BRANCH"
-            printf '%s' "${GITHUB_REF_NAME}" > .starterpack/VERSION
+            printf '%s' "${{ steps.resolve-tag.outputs.tag }}" > .starterpack/VERSION
             git add .starterpack/VERSION
-            git diff --cached --quiet || git commit -m "chore: update VERSION to ${GITHUB_REF_NAME} [skip ci]"
+            git diff --cached --quiet || git commit -m "chore: update VERSION to ${{ steps.resolve-tag.outputs.tag }} [skip ci]"
             git push origin "$BRANCH" || echo "::warning::Could not push VERSION update back to $BRANCH"
           fi
 
       - name: Generate release notes
         id: notes
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.resolve-tag.outputs.tag }}"
           # Find previous tag
           PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | grep -v "^$TAG$" | head -1)
           if [ -n "$PREV_TAG" ]; then
@@ -128,7 +128,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.resolve-tag.outputs.tag }}"
           PRERELEASE="${{ steps.release-type.outputs.prerelease }}"
           FLAGS=""
           if [ "$PRERELEASE" = "true" ]; then
