@@ -52,6 +52,7 @@ What you can customize:
 - **Behaviors**: modify agent capabilities independently. Each file owns one concern. Add a new behavior by creating a file and registering it in the manifest.
 - **Lifecycles**: add or remove phases, change which behaviors load, adjust what gets presented at human gates.
 - **MODELS_AND_ROLES.xml**: change model assignments per role. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
+- **config.yaml**: set the task source (GitHub or Linear), nightly processing mode, and agent permissions (auto-merge, auto-close). See the config.yaml section below.
 
 ## About Behaviors and Lifecycles
 
@@ -81,7 +82,7 @@ The orchestrator (main Claude Code instance) never writes code, never reviews co
 
 ### On-demand lifecycles
 
-Not every ticket follows the standard five-phase flow. On-demand lifecycles are alternative entry points registered in the manifest with `on-demand="true"`. They run independently and can feed back into the standard workflow. For example, `NIGHTLY_AUTONOMOUS_RUN` is a pre-flight gate for tickets labeled `autonomously-nightly` — it assesses whether the ticket has enough information for an AI agent to execute autonomously, then either activates autonomous mode on the standard workflow or posts clarifying questions on the GitHub issue and exits.
+Not every ticket follows the standard five-phase flow. On-demand lifecycles are alternative entry points registered in the manifest with `on-demand="true"`. They run independently and can feed back into the standard workflow. For example, `NIGHTLY_AUTONOMOUS_RUN` is a pre-flight gate for tickets matching the configured task-source label (default: `autonomously-nightly`, configurable in `config.yaml`) — it assesses whether the ticket has enough information for an AI agent to execute autonomously, then either activates autonomous mode on the standard workflow or posts clarifying questions on the GitHub issue and exits.
 
 ## About MODELS_AND_ROLES.xml
 
@@ -110,6 +111,37 @@ Cheaper models escalate up when they fail. A Haiku agent that gets stuck escalat
 ### Customization
 
 Edit the roles section in `MODELS_AND_ROLES.xml` to change model assignments. Budget-conscious: set implementers to light with escalation to worker then reasoning. Max quality: set everything to reasoning.
+
+## About config.yaml
+
+`.starterpack/config.yaml` is the runtime configuration file for task sourcing, nightly behavior, and agent permissions. The orchestrator reads it alongside the manifests at session start.
+
+### Task source
+
+| Key | Values | Default | Purpose |
+|-----|--------|---------|---------|
+| `task_source.provider` | `github`, `linear` | `github` | Where the orchestrator looks for tickets |
+| `task_source.github.label` | any GitHub label string | `autonomously-nightly` | Label used to filter issues for nightly processing |
+| `task_source.linear.team` | Linear team key | `""` | Linear team key (e.g., `ENG`) |
+| `task_source.linear.project` | Linear project slug | `""` | Optional project filter |
+| `task_source.linear.status_filter` | Linear state name | `Todo` | Which state to pick up issues from |
+
+### Nightly mode
+
+| Key | Values | Default | Purpose |
+|-----|--------|---------|---------|
+| `nightly.mode` | `pickup-one`, `pickup-many` | `pickup-one` | Whether the nightly run processes one ticket per invocation or loops through all matching tickets |
+
+### Agent permissions
+
+| Key | Values | Default | Purpose |
+|-----|--------|---------|---------|
+| `agent_permissions.auto_merge` | `true`, `false` | `false` | If true, the agent merges the PR after CI passes |
+| `agent_permissions.auto_close` | `true`, `false` | `false` | If true, the agent transitions the issue to Done/Closed after merge |
+
+### Customization
+
+Edit `.starterpack/config.yaml` to change any of these values. The installer preserves your existing config.yaml on upgrades — it will never be overwritten.
 
 ## Comment Queue
 
