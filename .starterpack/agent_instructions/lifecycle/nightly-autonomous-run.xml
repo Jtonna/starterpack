@@ -9,35 +9,34 @@
   <uses-behavior name="autonomous-nightly" />
   <uses-behavior name="response-format" lifecycle="NIGHTLY_AUTONOMOUS_RUN" />
 
-  <loop>
-    <!--
-      [START]
-          |
-          v
-      [Phase 1: DETECT]
-          |
-          +~~ no open issues labeled autonomously-nightly ~~> [EXIT — nothing to process]
-          |
-          +~~ command failure ~~> [EXIT — report error]
-          |
-          +~~ open issue found, has pending-close label ~~> skip issue, try next
-          |
-          +~~ open issue found, no open PR, but merged PR exists ~~> skip issue, try next
-          |
-          +~~ open issue found, no open PR ~~> [Phase 2: ASSESS]
-          |
-          +~~ open issue found, open PR exists ~~> check PR/issue comments for follow-up
-          |       |
-          |       +~~ actionable feedback ~~> [Phase 2: ASSESS] (address feedback)
-          |       |
-          |       +~~ no actionable feedback ~~> skip issue, try next
+  <!--
+    [START]
+        |
+        v
+    [Phase 1: DETECT]
+        |
+        +~~ no open issues labeled autonomously-nightly ~~> [EXIT — nothing to process]
+        |
+        +~~ command failure ~~> [EXIT — report error]
+        |
+        +~~ open issue found, has pending-close label ~~> skip issue, try next
+        |
+        +~~ open issue found, no open PR, but merged PR exists ~~> skip issue, try next
+        |
+        +~~ open issue found, no open PR ~~> [Phase 2: ASSESS]
+        |
+        +~~ open issue found, open PR exists ~~> check PR/issue comments for follow-up
+        |       |
+        |       +~~ actionable feedback ~~> [Phase 2: ASSESS] (address feedback)
+        |       |
+        |       +~~ no actionable feedback ~~> skip issue, try next
 
-      [Phase 2: ASSESS]
-          |
-          +~~ INCOMPLETE ~~> [Phase 3: ROUTE_INCOMPLETE] ~~> [EXIT — questions posted]
-          |
-          +~~ COMPLETE ~~> [Phase 4: ROUTE_COMPLETE] ~~> [ENTRY lifecycle, autonomous mode]
-    -->
+    [Phase 2: ASSESS]
+        |
+        +~~ INCOMPLETE ~~> [Phase 3: ROUTE_INCOMPLETE] ~~> [EXIT — questions posted]
+        |
+        +~~ COMPLETE ~~> [Phase 4: ROUTE_COMPLETE] ~~> run standard lifecycle ~~> [EXIT]
+  -->
 
     <phase name="DETECT" order="1">
       <actor>Orchestrator (reasoning tier)</actor>
@@ -149,7 +148,5 @@
       </on-success>
       <on-failure>Report the failure and exit. Do not proceed to the standard workflow.</on-failure>
     </phase>
-
-  </loop>
 
 </lifecycle>
