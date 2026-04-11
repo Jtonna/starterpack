@@ -1,0 +1,21 @@
+# .starterpack/config.yaml
+# Agent runtime configuration for the starterpack orchestrator.
+
+task_source:
+  provider: github  # "github" or "linear"
+
+  github:
+    label: "autonomously-nightly"  # label to filter issues for nightly processing
+
+  linear:
+    team: ""           # Linear team key (e.g., "ENG")
+    project: ""        # Optional: Linear project slug to filter issues
+    status_filter: "Todo"  # Which Linear state to pick up issues from
+    mcp_server: "https://mcp.linear.app/mcp"  # Linear's official MCP server URL
+
+nightly:
+  mode: "pickup-one"   # "pickup-one" or "pickup-many"
+
+agent_permissions:
+  auto_merge: false     # If true, agent merges PR after CI passes. Default: false (PR left open)
+  auto_close: false     # If true, agent transitions issue to Done/Closed after merge. Default: false
