@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "issue": 50,
+    "body": "This issue needs clarification before autonomous execution:\n\n1. This ticket declares a hard dependency on #49 (`.starterpack/config.yaml` must exist first), but #49 has not merged yet (PR #55 is still open). Should autonomous processing of this ticket wait until #49 merges to main, or should work begin on a branch that builds on top of the `FEAT/49-add-config-yaml-schema` branch?\n\nThis issue is labeled autonomously-nightly but cannot proceed without answers to the above.\nOnce resolved, re-run the nightly workflow or remove the label and work on it manually."
+  }
+]
