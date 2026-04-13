@@ -1,6 +1,1 @@
-[
-  {
-    "issue": 51,
-    "body": "This issue needs clarification before autonomous execution:\n\n1. This ticket declares a dependency on #49 (`.starterpack/config.yaml` must exist first), but #49's PR (#55) has not merged to main yet. Should this issue wait for #49 to merge, or should work begin on a branch that includes the config.yaml changes from `FEAT/49-add-config-yaml-schema`?\n\n2. The behavior requires Linear's MCP server to be configured in `.mcp.json`. Should the behavior file include the `.mcp.json` configuration snippet as a setup instruction only, or should this ticket also create/update `.mcp.json` in the repo? If `.mcp.json` already exists with other servers, how should the Linear entry be added without overwriting existing config?\n\nThis issue is labeled autonomously-nightly but cannot proceed without answers to the above.\nOnce resolved, re-run the nightly workflow or remove the label and work on it manually."
-  }
-]
+[]
