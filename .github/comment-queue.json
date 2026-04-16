@@ -1,6 +1,1 @@
-[
-  {
-    "issue": 51,
-    "body": "## Implementation Plan (autonomous-nightly)\n\n### Sub-task 1: Author `linear-issues.xml` behavior file (standard)\n- Create `.starterpack/agent_instructions/behaviors/linear-issues.xml` with 7 sections:\n  1. **configuration** — Read `task_source.linear.*` from config.yaml; verify MCP server in `.mcp.json`\n  2. **reading-issues** — MCP tool calls to list/view issues by team, project, status\n  3. **creating-issues** — MCP tool calls to create issues with team/project/status/labels\n  4. **commenting** — Direct MCP comments (no comment queue needed)\n  5. **state-transitions** — Todo → In Progress → In Review → Done; check `auto_close` before Done\n  6. **labels-and-metadata** — MCP tool calls for labels, priority, assignee\n  7. **parent-child-detection** — Use Linear's native sub-issues via MCP\n- Mirror github-issues.xml structure (complex pattern with comment dividers)\n- Comply with all create-behavior authoring rules\n- **Files**: `.starterpack/agent_instructions/behaviors/linear-issues.xml` (new)\n\n### Sub-task 2: Register in BEHAVIORS_MANIFEST.xml (light)\n- Add entry after the last existing behavior (`github-issues`)\n- **Files**: `.starterpack/agent_instructions/BEHAVIORS_MANIFEST.xml`\n\n### Sub-task 3: Review against authoring rules (light)\n- Check all create-behavior.xml rules + contradiction/redundancy review\n\n### Dependencies\nSub-task 1 → (Sub-task 2 + Sub-task 3 in parallel)\n\n---\n_Plan auto-approved (autonomous mode)._"
-  }
-]
+[]
