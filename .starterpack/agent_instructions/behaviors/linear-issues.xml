@@ -1,0 +1,282 @@
+<behavior name="linear-issues">
+
+  <summary>
+    Authoritative reference for all Linear issue operations: reading configuration,
+    querying and creating issues, posting comments directly via MCP, managing labels
+    and metadata, transitioning workflow states, and detecting parent-child relationships.
+  </summary>
+
+  <definition>
+    This behavior consolidates every Linear issue operation an agent may need to perform.
+    It is the single source of truth for how agents interact with Linear — from reading
+    and creating issues to posting comments and managing state transitions. All operations
+    use Linear's official MCP server. Configuration for Linear-specific settings is read
+    from .starterpack/config.yaml at runtime.
+  </definition>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CONFIGURATION
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="configuration">
+
+    <rule name="CONFIG_FILE_PATH">
+      Read Linear settings from .starterpack/config.yaml. This file is project data —
+      read it the same way you would read any project file. If the file does not exist,
+      use the defaults listed below for every key.
+    </rule>
+
+    <rule name="CONFIG_KEYS">
+      The relevant YAML keys and their defaults:
+
+        task_source:
+          linear:
+            team: ""                                   # Linear team key (e.g., "ENG")
+            project: ""                                # Optional: Linear project slug
+            status_filter: "Todo"                      # Which Linear state to pick up issues from
+            mcp_server: "https://mcp.linear.app/mcp"  # Linear's official MCP server URL
+
+        agent_permissions:
+          auto_merge: false                            # whether to auto-merge PRs after CI passes
+          auto_close: false                            # whether to transition issues to Done directly
+
+      Read each key individually. If a key is absent from the file, use the default
+      value shown above. Never fail or abort because a config key is missing.
+    </rule>
+
+    <rule name="MCP_SERVER_VERIFICATION">
+      Before performing any Linear operation, verify that the Linear MCP server is
+      configured in .mcp.json. Look for an entry whose URL matches the value of
+      task_source.linear.mcp_server from config (default: "https://mcp.linear.app/mcp").
+
+      If the MCP server entry is not found in .mcp.json, stop and report:
+
+        "Linear MCP server is not configured. Add an entry to .mcp.json pointing to
+        https://mcp.linear.app/mcp (or the custom URL set in task_source.linear.mcp_server
+        in .starterpack/config.yaml). The MCP server must be listed in .mcp.json for
+        Linear operations to function."
+
+      Do not attempt any Linear operations if the MCP server is not configured.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       READING ISSUES
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="reading-issues">
+
+    <rule name="READ_SINGLE_ISSUE">
+      To read a single issue by its identifier (e.g., "ENG-42"), use the Linear MCP
+      server to fetch full issue details including title, description, state, labels,
+      comments, and parent relationship.
+
+      Use the MCP tool to call the Linear API and retrieve the issue by its identifier.
+      Use this when you have a specific issue identifier and need complete details.
+    </rule>
+
+    <rule name="LIST_ISSUES_BY_STATUS">
+      To list issues queued for processing, use the Linear MCP server to query issues
+      filtered by all three of the following (read from config):
+        - team:          task_source.linear.team          (e.g., "ENG")
+        - project:       task_source.linear.project       (if set; omit filter if empty)
+        - status_filter: task_source.linear.status_filter (default: "Todo")
+
+      Request the following fields for each issue: identifier, title, description,
+      state, labels, parent, and createdAt. Apply a reasonable result limit (20 issues)
+      to avoid oversized responses.
+
+      Use this for identifying issues queued for automated processing.
+    </rule>
+
+    <rule name="LIST_ISSUES_BY_LABEL">
+      To list issues with a specific label (used by nightly processing), use the Linear
+      MCP server to query issues in the configured team filtered by that label name.
+
+      Also apply the project filter from task_source.linear.project if it is set.
+      Request identifier, title, description, state, labels, and parent for each result.
+
+      Use this to find issues marked for autonomous execution.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CREATING ISSUES
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="creating-issues">
+
+    <rule name="CREATE_ISSUE">
+      To create a standard issue, use the Linear MCP server to create an issue with:
+        - team:    the value of task_source.linear.team from config
+        - title:   the issue title
+        - description: the issue body (markdown supported)
+        - state:   "Todo" (or the appropriate initial state for the team's workflow)
+        - labels:  one or more relevant label names
+        - project: the value of task_source.linear.project from config (if set)
+
+      Use the label that best describes the nature of the work:
+        - Feature   — new capability or improvement to existing functionality
+        - Bug       — something is broken or behaving incorrectly
+        - Task      — a defined unit of non-feature work (migration, setup, etc.)
+        - Chore     — housekeeping, dependency updates, config changes
+    </rule>
+
+    <rule name="CREATE_SUB_ISSUE">
+      Linear has native sub-issue support. To create a sub-issue under a parent:
+        - Use the Linear MCP server to create an issue with all standard fields
+          (team, title, description, state, labels, project) as in CREATE_ISSUE
+        - Additionally set the parentId field to the identifier of the parent issue
+
+      The parent-child relationship is stored natively in Linear and does not require
+      any body references or manual linking.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       COMMENTING
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="commenting">
+
+    <rule name="DIRECT_COMMENTS">
+      Unlike GitHub, Linear comments are posted directly via the Linear MCP server.
+      There is no comment queue. Use the MCP tool to call the Linear comment creation
+      API with the issue identifier and the comment body.
+
+      Comments will appear as the authenticated Linear user. This is the only way
+      to post comments on Linear issues — do not use any queue or intermediate file.
+    </rule>
+
+    <rule name="COMMENT_FORMAT">
+      Structure comments for clarity. Use the following conventions:
+
+      For progress updates:
+        **Status**: {brief status phrase}
+        **Details**: {what was done or what is happening}
+        **Next**: {what happens next, if relevant}
+
+      For clarification questions:
+        **Question**: {the specific question}
+        **Context**: {why this information is needed}
+        **Options** (if applicable): list of choices for the human to pick from
+
+      Markdown is supported in Linear comments. Keep comments concise and actionable.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       STATE TRANSITIONS
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="state-transitions">
+
+    <rule name="DEFAULT_TRANSITIONS">
+      The default lifecycle mapping for issue states is:
+
+        Todo → In Progress   — transition when the agent begins working on the issue
+        In Progress → In Review  — transition when a pull request is created
+        In Review → Done         — only if agent_permissions.auto_close is true
+
+      Use the Linear MCP server to update the issue's state at each transition point.
+      Read the team's available states via MCP before transitioning to ensure the
+      state name exists in the team's workflow. Use the closest matching state name
+      if the exact default names are not present.
+    </rule>
+
+    <rule name="AUTO_CLOSE_CHECK">
+      Before transitioning any issue to Done (or the team's equivalent completed state),
+      the agent MUST read agent_permissions.auto_close from .starterpack/config.yaml.
+
+      If auto_close is true:  the transition to Done is permitted.
+      If auto_close is false: do NOT transition to Done. Leave the issue in "In Review"
+                              (or equivalent) and rely on human review to close it.
+    </rule>
+
+    <rule name="NO_PREMATURE_CLOSE">
+      Never transition an issue to Done without first completing the AUTO_CLOSE_CHECK.
+      This check is mandatory — there are no exceptions. An issue in "In Review" with
+      a merged PR is a valid end state when auto_close is false.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       LABELS AND METADATA
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="labels-and-metadata">
+
+    <rule name="ADD_LABEL">
+      To add a label to a Linear issue, use the Linear MCP server to update the
+      issue's labels. Retrieve the current label list first, then submit the updated
+      list with the new label added. Labels are identified by name in Linear.
+    </rule>
+
+    <rule name="REMOVE_LABEL">
+      To remove a label from a Linear issue, use the Linear MCP server to update the
+      issue's labels. Retrieve the current label list first, then submit the updated
+      list with the target label removed.
+    </rule>
+
+    <rule name="UPDATE_METADATA">
+      To update other metadata fields (priority, assignee, due date, estimate, or
+      project), use the Linear MCP server to update the issue with the new field values.
+
+      Common update operations:
+        - Assign to a user:    set the assigneeId field to the user's Linear ID
+        - Set priority:        set the priority field (0=No priority, 1=Urgent, 2=High,
+                               3=Medium, 4=Low)
+        - Set due date:        set the dueDate field in ISO 8601 format (YYYY-MM-DD)
+        - Move to project:     set the projectId field to the target project's ID
+
+      Only update fields that are explicitly required by the task. Do not modify
+      unrelated metadata.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PARENT-CHILD DETECTION
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="parent-child-detection">
+
+    <rule order="1">
+      Use the Linear MCP server to fetch the issue and inspect its parent field.
+      Linear stores the parent-child relationship natively — no body parsing is needed.
+      If the parent field is null or absent, the issue is standalone; skip to step 3.
+    </rule>
+
+    <rule order="2">
+      If a parent issue exists, fetch the parent issue via the Linear MCP server to
+      retrieve its project, epic context, and any associated feature branch information.
+
+      Check whether an active feature branch exists for the parent issue by looking for
+      a branch matching the pattern EPIC/{parent-identifier}-* or FEAT/{parent-identifier}-*:
+
+        git branch -r | grep "{parent-identifier}"
+
+      If the feature branch exists:
+        - It becomes the mandatory base branch for the current issue's work.
+        - All branches created for the current issue must be cut from this feature
+          branch, and PRs must target it.
+        - Log: "Issue {current-identifier} is child of {parent-identifier}, using base branch {branch-name}"
+
+      If no feature branch exists for the parent:
+        - Treat the current issue as standalone and default to main until the parent's
+          feature branch is set up.
+    </rule>
+
+    <rule order="3">
+      If no parent is found (or the parent's feature branch does not exist), the issue
+      is standalone. The base branch defaults to main.
+    </rule>
+
+  </section>
+
+</behavior>

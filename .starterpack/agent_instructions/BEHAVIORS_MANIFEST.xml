@@ -69,4 +69,10 @@
     how to request clarification when it does not, and PR merge rules for autonomous work.
   </behavior>
 
+  <behavior name="linear-issues" file="behaviors/linear-issues.xml">
+    Authoritative reference for all Linear issue operations via Linear's official MCP server.
+    Covers configuration, reading and creating issues, direct MCP comments, state transitions,
+    label and metadata management, and native parent-child detection.
+  </behavior>
+
 </behaviors-manifest>
