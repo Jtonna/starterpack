@@ -1,6 +1,1 @@
-[
-  {
-    "issue": 52,
-    "body": "This issue needs clarification before autonomous execution:\n\n1. This ticket declares hard dependencies on #49 (`.starterpack/config.yaml`), #50 (`github-issues` behavior), and #51 (`linear-issues` behavior), but none have merged yet — PRs #55 (for #49), #56 (for #50), and #57 (for #51) are all still open. Should autonomous processing wait until all three dependencies merge to main, or should work begin on a branch that builds on top of the dependency branches?\n\nThis issue is labeled autonomously-nightly but cannot proceed without answers to the above.\nOnce resolved, re-run the nightly workflow or remove the label and work on it manually."
-  }
-]
+[]
