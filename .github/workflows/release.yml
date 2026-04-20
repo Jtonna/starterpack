@@ -10,6 +10,7 @@ on:
         required: true
         type: choice
         options:
+          - dev
           - patch
           - minor
           - major
@@ -37,21 +38,49 @@ jobs:
         id: compute-tag
         if: github.event_name == 'workflow_dispatch'
         run: |
-          LATEST=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          LATEST=$(git tag -l 'v*' | sort -V | tail -1)
           if [ -z "$LATEST" ]; then
-            echo "::error::No production tags found"
+            echo "::error::No tags found"
             exit 1
           fi
-          echo "Latest production tag: $LATEST"
-          VERSION="${LATEST#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "Latest tag: $LATEST"
           BUMP="${{ inputs.bump }}"
+
+          # Detect whether the latest tag is a dev tag (v#.#.#-dev.N)
+          if echo "$LATEST" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+-dev\.[0-9]+$'; then
+            IS_DEV=true
+            BASE_VERSION=$(echo "$LATEST" | sed 's/^v//' | sed 's/-dev\.[0-9]*$//')
+            DEV_NUM=$(echo "$LATEST" | sed 's/.*-dev\.//')
+          else
+            IS_DEV=false
+            BASE_VERSION="${LATEST#v}"
+            DEV_NUM=0
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+
           case "$BUMP" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
+            dev)
+              if [ "$IS_DEV" = "true" ]; then
+                # Increment dev number on the same base version
+                NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}-dev.$((DEV_NUM + 1))"
+              else
+                # Start a dev series targeting the next patch
+                NEW_TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))-dev.1"
+              fi
+              ;;
+            patch)
+              if [ "$IS_DEV" = "true" ]; then
+                # Promote dev series to its target production version (no increment)
+                NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+              else
+                NEW_TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+              fi
+              ;;
+            minor) NEW_TAG="v${MAJOR}.$((MINOR + 1)).0" ;;
+            major) NEW_TAG="v$((MAJOR + 1)).0.0" ;;
           esac
-          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+
           if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
             echo "::error::Tag $NEW_TAG already exists"
             exit 1
