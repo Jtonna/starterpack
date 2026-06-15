@@ -38,7 +38,11 @@ jobs:
         id: compute-tag
         if: github.event_name == 'workflow_dispatch'
         run: |
-          LATEST=$(git tag -l 'v*' | sort -V | tail -1)
+          # Map '-' to '~' before sorting so pre-release tags (vX.Y.Z-dev.N) sort
+          # BELOW their production release (vX.Y.Z), matching SemVer precedence —
+          # GNU `sort -V` otherwise ranks pre-releases above the release. Restore
+          # the real tag name afterward.
+          LATEST=$(git tag -l 'v*' | sed 's/-/~/' | sort -V | sed 's/~/-/' | tail -1)
           if [ -z "$LATEST" ]; then
             echo "::error::No tags found"
             exit 1
