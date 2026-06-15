@@ -3,7 +3,7 @@
   <summary>
     Authoritative reference for all GitHub issue operations: reading configuration,
     querying and creating issues, posting comments via the queue, managing labels,
-    closing issues, and detecting epic parent relationships.
+    closing issues, and resolving the base branch for multi-ticket work.
   </summary>
 
   <definition>
@@ -81,14 +81,6 @@
       automated processing.
     </rule>
 
-    <rule name="LIST_OPEN_EPICS">
-      To list all open epic issues (for parent detection and dependency checks):
-
-        gh issue list --label epic --state open --json number,body
-
-      Use this when determining whether a given issue is a child of an open epic.
-    </rule>
-
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
@@ -97,26 +89,36 @@
 
   <section name="creating-issues">
 
-    <rule name="CREATE_EPIC">
-      To create an epic issue (a parent that groups related child issues):
+    <rule name="CREATE_PARENT_FEATURE">
+      To create a parent feature issue (a feature that groups related child issues
+      for multi-ticket work):
 
-        gh issue create --title "{title}" --body "{body}" --label epic
+        gh issue create --title "{title}" --body "{body}" --label feature
 
-      The body should include a task list of planned child issues. Epic issues use
-      the "epic" label exclusively for type identification — do not add a second
-      type label.
+      The body should include a task list of the planned child issues. The parent
+      uses the "feature" type label like any other feature; what makes it a parent
+      is the child task list in its body, not a distinct label.
     </rule>
 
     <rule name="CREATE_STANDARD_ISSUE">
-      To create a standard (non-epic) issue, use one of the issue type labels:
+      To create a standard issue, use one of the issue type labels:
 
         gh issue create --title "{title}" --body "{body}" --label {type-label}
 
       Valid type labels and their meanings:
-      - enhancement  — new feature or improvement to existing functionality
-      - bug          — something is broken or behaving incorrectly
-      - task         — a defined unit of non-feature work (migration, setup, etc.)
-      - chore        — housekeeping, dependency updates, config changes
+      - feature   — new feature or functionality
+      - bugfix    — fixing a known bug
+      - hotfix    — urgent production fix
+      - release   — release preparation
+      - chore     — maintenance, dependency updates, config changes
+      - docs      — documentation changes
+      - refactor  — code restructuring with no behavior change
+      - test      — adding or updating tests
+      - ci        — CI / pipeline configuration
+      - build     — build system or dependencies
+      - perf      — performance improvement
+      - style     — formatting / whitespace only
+      - revert    — reverting a previous change
 
       Choose the label that best describes the nature of the work. The type label
       also determines the branch name prefix used when work begins on the issue.
@@ -223,17 +225,13 @@
                  manually by humans or via gh issue edit --add-label.
 
       pending-close:
-        Purpose: Signals that an epic child issue has completed work merged into
-                 the epic's feature branch, but cannot close yet. GitHub only
-                 auto-closes issues when a PR merges to the default branch (main).
-                 Add this label after a child PR merges to a feature branch.
-                 The label becomes irrelevant once the epic's final PR merges to
-                 main and GitHub auto-closes the issue — no explicit removal needed.
-
-      epic:
-        Purpose: Marks an issue as an epic (parent of child issues). Used for
-                 filtering and branch-prefix selection. Epic branches use the
-                 EPIC/ prefix.
+        Purpose: Signals that a child issue has completed work merged into its
+                 base feature branch, but cannot close yet. GitHub only auto-closes
+                 issues when a PR merges to the default branch (main).
+                 Add this label after a child PR merges to a base feature branch.
+                 The label becomes irrelevant once the base feature branch's final
+                 PR merges to main and GitHub auto-closes the issue — no explicit
+                 removal needed.
     </rule>
 
   </section>
@@ -253,11 +251,11 @@
           Use "Closes #{number}" in the PR body.
           GitHub auto-closes the issue when the PR merges to main.
 
-      - PR targeting a feature branch (epic child work):
+      - PR targeting a base feature branch (multi-ticket child work):
           Use "Relates to #{number}" in the PR body.
           Do NOT use "Closes" — that would attempt premature closure before the
-          epic's work is complete. The issue closes when the epic's final PR
-          merges to main.
+          multi-ticket work is complete. The issue closes when the base feature
+          branch's final PR merges to main.
 
       <example>
         PR body for work targeting main:
@@ -292,54 +290,37 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       EPIC DETECTION
+       BASE BRANCH RESOLUTION
        ═══════════════════════════════════════════════════════════════════════ -->
 
-  <section name="epic-detection">
+  <section name="base-branch-resolution">
 
     <rule order="1">
-      Query all open epics:
-
-        gh issue list --label epic --state open --json number,body
-
-      Store the result for inspection. If the command returns an empty list,
-      the current issue is standalone — skip to step 4.
+      Most issues are standalone: their base branch is main. Branches are cut from
+      main and their PRs target main.
     </rule>
 
     <rule order="2">
-      For each open epic returned, inspect the epic's body for a reference to
-      the current issue number. A child reference may appear as:
-        - A task list item:   "- [ ] #42" or "- [x] #42"
-        - A numbered list:    "1. #42" or "1. Fix login crash (#42)"
-        - A prose mention:    "child of #15", "part of #15", "see #15"
-        - Any pattern where the issue number appears alongside the epic body text
-
-      If the current issue number is found in an epic's body, that epic is the
-      parent. Record the epic's issue number.
+      An issue is part of multi-ticket work when it appears as a child in a parent
+      feature issue's task list (or the human directs it). Multi-ticket work shares
+      a base feature branch (feature/{parent-number}-{desc}) cut from main, where
+      {parent-number} is the parent feature issue.
     </rule>
 
     <rule order="3">
-      If a parent epic is found, determine whether an active feature branch exists
-      for that epic. Look for a branch matching the pattern EPIC/{epic-number}-*:
+      To resolve the base branch for a child issue, look for the parent's base
+      feature branch:
 
-        git branch -r | grep "EPIC/{epic-number}-"
+        git branch -r | grep "feature/{parent-number}-"
 
-      If the feature branch exists:
-        - It becomes the mandatory base branch for the current issue's work.
-        - All branches created for the current issue must be cut from this feature
-          branch, and PRs must target it.
-        - This is not optional — epic children must use their epic's feature branch
-          as the base, not main.
-        - Log: "Issue #{current} is child of epic #{epic}, using base branch EPIC/..."
+      If it exists:
+        - It is the mandatory base branch for the child's work.
+        - All branches for the child are cut from it, and PRs target it (not main).
+        - Log: "Issue #{current} is a child of parent feature #{parent}, using base
+          branch feature/{parent-number}-..."
 
-      If no feature branch exists for the epic yet:
-        - The feature branch has not been created. Treat the current issue as if
-          no parent was found and default to main until the feature branch is set up.
-    </rule>
-
-    <rule order="4">
-      If no parent epic is found (or the epic's feature branch does not exist),
-      the issue is standalone. The base branch defaults to main.
+      If it does not exist yet, treat the child as standalone and default to main
+      until the base feature branch is created.
     </rule>
 
   </section>

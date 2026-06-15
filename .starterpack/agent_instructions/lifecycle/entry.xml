@@ -73,16 +73,18 @@
       <!-- SPEC_FILE path -->
       <action entry="SPEC_FILE">Read the spec file in full.</action>
       <action entry="SPEC_FILE">
-        Create an epic issue: gh issue create --title "..." --body "..." --label epic
+        Create a parent feature issue: gh issue create --title "..." --body "..." --label feature
       </action>
       <action entry="SPEC_FILE">
-        Decompose the spec into individual feature/task issues.
-        For dependency tracking, add a task list in the epic body listing child issues.
+        Decompose the spec into individual child issues, each with an appropriate
+        type label. For dependency tracking, add a task list in the parent feature
+        issue body listing the child issues.
       </action>
 
       <!-- AD_HOC_REQUEST path -->
       <action entry="AD_HOC_REQUEST">
-        Create a GitHub issue: gh issue create --title "..." --body "..." --label enhancement|bug|task
+        Create a GitHub issue: gh issue create --title "..." --body "..." --label {type}
+        (where {type} is one of the issue type labels: feature, bugfix, hotfix, chore, docs, refactor, test, perf, etc.)
         Never implement an ad-hoc request without a ticket. If the human insists on skipping,
         explain that every change must be tracked and push back respectfully.
       </action>
@@ -90,25 +92,24 @@
         Confirm with the human: "Created #{number}: {title}. Proceeding."
       </action>
 
-      <!-- Epic parent detection — all paths -->
+      <!-- Base branch resolution — all paths -->
       <action>
-        Before selecting the base branch, check if this issue is a child of an open epic:
-          gh issue list --label epic --state open --json number,body
-        For each epic, check if the current issue number appears in the body
-        as a child reference (e.g., in a task list or "child of" mention).
-        If a parent epic is found:
-          - Check if a feature branch EPIC/{epic-number}-* exists for that epic.
-          - If the feature branch exists, it becomes the mandatory base branch.
-            This is not optional — epic children must target their epic's feature branch.
-          - Log: "Issue is child of epic #{N}, using feature branch EPIC/..."
-        If no parent epic is found, proceed to base branch selection as normal.
+        Before selecting the base branch, resolve whether this issue is part of
+        multi-ticket work — i.e. a child listed in a parent feature issue's task
+        list. If it is, check whether the parent's base feature branch exists:
+          git branch -r | grep "feature/{parent-number}-"
+        If the base feature branch exists, it becomes the mandatory base branch:
+        the current issue's branches are cut from it and its PR targets it.
+        Log: "Issue is child of parent feature #{N}, using base branch feature/{N}-..."
+        If there is no parent or the base feature branch does not exist yet,
+        proceed to base branch selection as normal.
       </action>
 
-      <!-- Base branch selection — all paths (skipped if epic parent detection set the base) -->
+      <!-- Base branch selection — all paths (skipped if base-branch resolution set the base) -->
       <action>
-        If no epic parent was detected, determine the base branch. Check the
+        If no base feature branch was resolved, determine the base branch. Check the
         current git context first — if already on a feature branch (e.g.
-        mid-epic work), default to that branch as the base. Otherwise,
+        mid multi-ticket work), default to that branch as the base. Otherwise,
         reason about the appropriate base:
         - If the context makes the base branch obvious, use it.
         - If ambiguous, ask the human which base branch to use (main or an
@@ -129,7 +130,7 @@
     <actions>
       <action>
         Present the full ticket breakdown to the human for approval (see human-gate behavior).
-        Include: epic issue number, all child issue numbers and titles, dependency ordering, and
+        Include: parent feature issue number, all child issue numbers and titles, dependency ordering, and
         selected base branch (main or feature branch).
       </action>
       <action>Wait for explicit human approval before proceeding.</action>
@@ -143,11 +144,11 @@
     <actor>Orchestrator launches a branch setup agent (light tier)</actor>
     <actions>
       <action>
-        If a feature branch was selected as the base branch:
-        Create the feature branch from main: git checkout -b EPIC/{number}-{desc}
+        If a base feature branch was selected as the base branch:
+        Create it from main: git checkout -b feature/{number}-{desc}
       </action>
       <action>
-        For multi-ticket work (SPEC_FILE or epic): pick the first ready child
+        For multi-ticket work (SPEC_FILE or a parent feature issue): pick the first ready child
         issue (gh issue list --state open). This child issue number becomes the
         active ticket for the PLANNING and IMPLEMENTATION phases.
       </action>

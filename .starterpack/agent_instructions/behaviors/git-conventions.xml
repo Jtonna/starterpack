@@ -20,16 +20,17 @@
       The base branch determines where ticket branches are created from and where
       pull requests target:
       - "main" (default): ticket branches are created from main, PRs merge to main.
-      - A feature branch (EPIC/{number}-{desc}): created from main for multi-ticket work.
-        Ticket branches are created from the feature branch, PRs merge to the
-        feature branch. A final PR merges the feature branch to main after all
-        children complete.
+      - A base feature branch (feature/{number}-{desc}): created from main for
+        multi-ticket work, where {number} is the parent feature issue. Child ticket
+        branches are created from the base feature branch and their PRs merge into
+        it. A final PR merges the base feature branch to main after all children
+        complete.
     </rule>
 
-    <rule name="epic-closed-last">
-      The epic ticket is closed only after all children are closed. When using a
-      feature branch, the epic is closed as part of the final pull request from the
-      feature branch to main.
+    <rule name="parent-closed-last">
+      The parent feature issue is closed only after all children are closed. When
+      using a base feature branch, the parent is closed as part of the final pull
+      request from the base feature branch to main.
     </rule>
 
   </section>
@@ -49,17 +50,25 @@
     </rule>
 
     <issue-type-to-branch>
-      <type name="enhancement" branch-prefix="FEAT/" />
-      <type name="bug"     branch-prefix="BUG/" />
-      <type name="task"    branch-prefix="TASK/" />
-      <type name="chore"   branch-prefix="CHORE/" />
-      <type name="epic"    branch-prefix="EPIC/" />
+      <type name="feature"  branch-prefix="feature/"  />
+      <type name="bugfix"   branch-prefix="bugfix/"   />
+      <type name="hotfix"   branch-prefix="hotfix/"   />
+      <type name="release"  branch-prefix="release/"  />
+      <type name="chore"    branch-prefix="chore/"    />
+      <type name="docs"     branch-prefix="docs/"     />
+      <type name="refactor" branch-prefix="refactor/" />
+      <type name="test"     branch-prefix="test/"     />
+      <type name="ci"       branch-prefix="ci/"       />
+      <type name="build"    branch-prefix="build/"    />
+      <type name="perf"     branch-prefix="perf/"     />
+      <type name="style"    branch-prefix="style/"    />
+      <type name="revert"   branch-prefix="revert/"   />
     </issue-type-to-branch>
 
     <examples>
-      <example>git checkout -b FEAT/42-add-logout-button</example>
-      <example>git checkout -b BUG/57-fix-login-crash</example>
-      <example>git checkout -b EPIC/30-user-auth-overhaul</example>
+      <example>git checkout -b feature/42-add-logout-button</example>
+      <example>git checkout -b bugfix/57-fix-login-crash</example>
+      <example>git checkout -b docs/61-update-readme</example>
     </examples>
   </section>
 
@@ -88,7 +97,7 @@
   <section name="commit-discipline">
     <rule name="issue-number-prefix">
       Every commit message starts with #{number} referencing the GitHub issue
-      being worked. Always use the child issue number, not the epic number.
+      being worked. Always use the child issue number, not the parent feature issue number.
     </rule>
     <rule name="granular-commits">Commits must be granular — one logical change per commit</rule>
     <rule name="multiple-commits-expected">Multiple commits per sub-task are expected</rule>

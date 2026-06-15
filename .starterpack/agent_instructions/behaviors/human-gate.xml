@@ -37,7 +37,7 @@
       <rule order="2">
         Scope — which tickets to complete autonomously:
         - Single ticket (current ticket only)
-        - All remaining tickets in the epic
+        - All remaining child tickets in the current multi-ticket work
         - Custom selection
       </rule>
       <rule order="3">
