@@ -69,4 +69,10 @@
     how to request clarification when it does not, and PR merge rules for autonomous work.
   </behavior>
 
+  <behavior name="github-issues" file="behaviors/github-issues.xml">
+    Authoritative reference for all GitHub issue operations: reading configuration,
+    querying and creating issues, posting comments via the queue, managing labels,
+    closing issues, and detecting epic parent relationships.
+  </behavior>
+
 </behaviors-manifest>

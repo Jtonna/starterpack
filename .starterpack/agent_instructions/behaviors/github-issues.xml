@@ -1,0 +1,353 @@
+<behavior name="github-issues">
+
+  <summary>
+    Authoritative reference for all GitHub issue operations: reading configuration,
+    querying and creating issues, posting comments via the queue, managing labels,
+    closing issues, and detecting epic parent relationships.
+  </summary>
+
+  <definition>
+    This behavior consolidates every GitHub issue operation an agent may need to perform.
+    It is the single source of truth for how agents interact with GitHub Issues — from
+    reading and creating issues to posting comments and managing labels. Configuration for
+    GitHub-specific settings is read from .starterpack/config.yaml at runtime.
+  </definition>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CONFIGURATION
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="configuration">
+
+    <rule name="CONFIG_FILE_PATH">
+      Read GitHub settings from .starterpack/config.yaml. This file is project data —
+      read it the same way you would read any project file. If the file does not exist,
+      use the defaults listed below for every key.
+    </rule>
+
+    <rule name="CONFIG_KEYS">
+      The relevant YAML keys and their defaults:
+
+        task_source:
+          github:
+            label: "autonomously-nightly"   # label used to filter issues for nightly processing
+
+        agent_permissions:
+          auto_merge: false                  # whether to auto-merge PRs after CI passes
+          auto_close: false                  # whether to close issues directly via gh issue close
+
+      Read each key individually. If a key is absent from the file, use the default
+      value shown above. Never fail or abort because a config key is missing.
+    </rule>
+
+    <rule name="CONFIG_USAGE">
+      Wherever this behavior refers to "the nightly label", substitute the value of
+      task_source.github.label from config (default: "autonomously-nightly").
+      Wherever this behavior refers to "auto_merge" or "auto_close", read those flags
+      from agent_permissions in config (defaults: false for both).
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       READING ISSUES
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="reading-issues">
+
+    <rule name="READ_SINGLE_ISSUE">
+      To read a single issue in full, including its body, labels, state, and comments:
+
+        gh issue view {number} --json number,title,body,labels,state,comments
+
+      Use this when you have a specific issue number and need complete details.
+    </rule>
+
+    <rule name="LIST_OPEN_ISSUES">
+      To list all open issues:
+
+        gh issue list --state open --json number,title,body,labels
+
+      Use this for a broad scan of open work.
+    </rule>
+
+    <rule name="LIST_BY_LABEL">
+      To list open issues filtered by the nightly label (value from config.yaml):
+
+        gh issue list --label "{label}" --state open --json number,title,body,labels,createdAt --limit 20
+
+      Replace {label} with the value of task_source.github.label from config
+      (default: "autonomously-nightly"). Use this to identify issues queued for
+      automated processing.
+    </rule>
+
+    <rule name="LIST_OPEN_EPICS">
+      To list all open epic issues (for parent detection and dependency checks):
+
+        gh issue list --label epic --state open --json number,body
+
+      Use this when determining whether a given issue is a child of an open epic.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CREATING ISSUES
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="creating-issues">
+
+    <rule name="CREATE_EPIC">
+      To create an epic issue (a parent that groups related child issues):
+
+        gh issue create --title "{title}" --body "{body}" --label epic
+
+      The body should include a task list of planned child issues. Epic issues use
+      the "epic" label exclusively for type identification — do not add a second
+      type label.
+    </rule>
+
+    <rule name="CREATE_STANDARD_ISSUE">
+      To create a standard (non-epic) issue, use one of the issue type labels:
+
+        gh issue create --title "{title}" --body "{body}" --label {type-label}
+
+      Valid type labels and their meanings:
+      - enhancement  — new feature or improvement to existing functionality
+      - bug          — something is broken or behaving incorrectly
+      - task         — a defined unit of non-feature work (migration, setup, etc.)
+      - chore        — housekeeping, dependency updates, config changes
+
+      Choose the label that best describes the nature of the work. The type label
+      also determines the branch name prefix used when work begins on the issue.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       COMMENTING
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="commenting">
+
+    <rule name="NO_DIRECT_COMMENTS">
+      Never use "gh issue comment" directly. All comments must flow through the
+      comment queue so they appear as github-actions[bot] rather than the user's
+      personal account. This is a hard constraint with no exceptions.
+    </rule>
+
+    <rule name="ALLOWED_DIRECT_OPERATIONS">
+      The following GitHub issue operations MAY be performed directly (without the
+      comment queue):
+      - Reading issue content:  gh issue view {number}, gh issue list
+      - Adding a label:         gh issue edit {number} --add-label "{label}"
+      - Removing a label:       gh issue edit {number} --remove-label "{label}"
+      - Creating a new issue:   gh issue create ...
+
+      Everything else — including posting any text that should appear as a comment
+      on an issue — must go through the comment queue.
+    </rule>
+
+    <rule order="1">
+      Format the comment as a JSON object with the issue number and the comment body:
+
+        {"issue": {number}, "body": "{comment text}"}
+
+      The comment text may include markdown. Escape any double-quotes inside the
+      body text. Multi-line comments use "\n" for line breaks within the JSON string.
+    </rule>
+
+    <rule order="2">
+      Append the JSON entry to .github/comment-queue.json. If the file does not
+      exist, create it with an empty array first. The file must remain valid JSON
+      at all times — it is an array of comment objects.
+
+        If file does not exist:
+          Write: []
+        Then append the new entry to the array.
+
+      The file after appending must be valid JSON (a proper array).
+    </rule>
+
+    <rule order="3">
+      Commit the updated queue file:
+
+        git add .github/comment-queue.json
+        git commit -m "#{number}: queue comment"
+
+      Use the issue number of the issue being commented on in the commit message.
+      If queueing comments for multiple issues in one operation, use the most
+      relevant issue number or a comma-separated list.
+    </rule>
+
+    <rule order="4">
+      Push immediately so the comment-sync workflow can pick up the entry and post
+      it to GitHub:
+
+        git push
+
+      Comments will not appear on GitHub until this push completes and the workflow runs.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       LABELS
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="labels">
+
+    <rule name="ADD_LABEL">
+      To add a label to an issue:
+
+        gh issue edit {number} --add-label "{label}"
+
+      This may be done directly — no comment queue needed.
+    </rule>
+
+    <rule name="REMOVE_LABEL">
+      To remove a label from an issue:
+
+        gh issue edit {number} --remove-label "{label}"
+
+      This may be done directly — no comment queue needed.
+    </rule>
+
+    <rule name="KNOWN_LABELS">
+      Label reference — names, sources, and purposes:
+
+      Nightly processing label (name read from config.yaml):
+        Key:     task_source.github.label
+        Default: "autonomously-nightly"
+        Purpose: Marks issues to be picked up and executed autonomously. Applied
+                 manually by humans or via gh issue edit --add-label.
+
+      pending-close:
+        Purpose: Signals that an epic child issue has completed work merged into
+                 the epic's feature branch, but cannot close yet. GitHub only
+                 auto-closes issues when a PR merges to the default branch (main).
+                 Add this label after a child PR merges to a feature branch.
+                 The label becomes irrelevant once the epic's final PR merges to
+                 main and GitHub auto-closes the issue — no explicit removal needed.
+
+      epic:
+        Purpose: Marks an issue as an epic (parent of child issues). Used for
+                 filtering and branch-prefix selection. Epic branches use the
+                 EPIC/ prefix.
+
+      Issue type labels (used for branch naming prefix selection):
+        enhancement  → FEAT/ branch prefix
+        bug          → BUG/ branch prefix
+        task         → TASK/ branch prefix
+        chore        → CHORE/ branch prefix
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CLOSING
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="closing">
+
+    <rule name="CLOSE_VIA_PR_BODY">
+      The standard way to close a GitHub issue is via the PR body, not via a direct
+      close command. Include the appropriate reference keyword in the PR description
+      when creating the pull request:
+
+      - PR targeting main:
+          Use "Closes #{number}" in the PR body.
+          GitHub auto-closes the issue when the PR merges to main.
+
+      - PR targeting a feature branch (epic child work):
+          Use "Relates to #{number}" in the PR body.
+          Do NOT use "Closes" — that would attempt premature closure before the
+          epic's work is complete. The issue closes when the epic's final PR
+          merges to main.
+
+      <example>
+        PR body for work targeting main:
+          ## Summary
+          Adds logout button to the navigation bar.
+
+          Closes #42
+
+        PR body for work targeting a feature branch:
+          ## Summary
+          Implements session clearing for the auth overhaul.
+
+          Relates to #43
+      </example>
+    </rule>
+
+    <rule name="DIRECT_CLOSE_CONDITIONS">
+      Direct closure via "gh issue close {number}" is only permitted when ALL of
+      the following are true:
+        1. agent_permissions.auto_close is set to true in .starterpack/config.yaml
+        2. The context explicitly requires it (e.g., the issue is a confirmed
+           duplicate, a won't-fix decision has been made, or the issue was created
+           in error)
+
+      When both conditions are met:
+        gh issue close {number}
+
+      If auto_close is false (the default), never call gh issue close — always
+      close via PR body reference instead.
+    </rule>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       EPIC DETECTION
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <section name="epic-detection">
+
+    <rule order="1">
+      Query all open epics:
+
+        gh issue list --label epic --state open --json number,body
+
+      Store the result for inspection. If the command returns an empty list,
+      the current issue is standalone — skip to step 4.
+    </rule>
+
+    <rule order="2">
+      For each open epic returned, inspect the epic's body for a reference to
+      the current issue number. A child reference may appear as:
+        - A task list item:   "- [ ] #42" or "- [x] #42"
+        - A numbered list:    "1. #42" or "1. Fix login crash (#42)"
+        - A prose mention:    "child of #15", "part of #15", "see #15"
+        - Any pattern where the issue number appears alongside the epic body text
+
+      If the current issue number is found in an epic's body, that epic is the
+      parent. Record the epic's issue number.
+    </rule>
+
+    <rule order="3">
+      If a parent epic is found, determine whether an active feature branch exists
+      for that epic. Look for a branch matching the pattern EPIC/{epic-number}-*:
+
+        git branch -r | grep "EPIC/{epic-number}-"
+
+      If the feature branch exists:
+        - It becomes the mandatory base branch for the current issue's work.
+        - All branches created for the current issue must be cut from this feature
+          branch, and PRs must target it.
+        - This is not optional — epic children must use their epic's feature branch
+          as the base, not main.
+        - Log: "Issue #{current} is child of epic #{epic}, using base branch EPIC/..."
+
+      If no feature branch exists for the epic yet:
+        - The feature branch has not been created. Treat the current issue as if
+          no parent was found and default to main until the feature branch is set up.
+    </rule>
+
+    <rule order="4">
+      If no parent epic is found (or the epic's feature branch does not exist),
+      the issue is standalone. The base branch defaults to main.
+    </rule>
+
+  </section>
+
+</behavior>
