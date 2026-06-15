@@ -49,7 +49,7 @@
     </rule>
 
     <issue-type-to-branch>
-      <type name="feature" branch-prefix="FEAT/" />
+      <type name="enhancement" branch-prefix="FEAT/" />
       <type name="bug"     branch-prefix="BUG/" />
       <type name="task"    branch-prefix="TASK/" />
       <type name="chore"   branch-prefix="CHORE/" />

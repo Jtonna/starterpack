@@ -234,12 +234,6 @@
         Purpose: Marks an issue as an epic (parent of child issues). Used for
                  filtering and branch-prefix selection. Epic branches use the
                  EPIC/ prefix.
-
-      Issue type labels (used for branch naming prefix selection):
-        enhancement  → FEAT/ branch prefix
-        bug          → BUG/ branch prefix
-        task         → TASK/ branch prefix
-        chore        → CHORE/ branch prefix
     </rule>
 
   </section>
