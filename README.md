@@ -52,7 +52,7 @@ What you can customize:
 - **Behaviors**: modify agent capabilities independently. Each file owns one concern. Add a new behavior by creating a file and registering it in the manifest.
 - **Lifecycles**: add or remove phases, change which behaviors load, adjust what gets presented at human gates.
 - **MODELS_AND_ROLES.xml**: change model assignments per role. On a budget? Run implementers on Haiku with escalation to Sonnet. Want max quality? Set everything to Opus.
-- **config.yaml**: set the task source (GitHub or Linear), nightly processing mode, and agent permissions (auto-merge, auto-close). See the config.yaml section below.
+- **config.yaml**: set the task source label, nightly processing mode, and agent permissions (auto-merge, auto-close). See the config.yaml section below.
 
 ## About Behaviors and Lifecycles
 
@@ -120,11 +120,8 @@ Edit the roles section in `MODELS_AND_ROLES.xml` to change model assignments. Bu
 
 | Key | Values | Default | Purpose |
 |-----|--------|---------|---------|
-| `task_source.provider` | `github`, `linear` | `github` | Where the orchestrator looks for tickets |
+| `task_source.provider` | `github` | `github` | Where the orchestrator looks for tickets (currently GitHub only) |
 | `task_source.github.label` | any GitHub label string | `autonomously-nightly` | Label used to filter issues for nightly processing |
-| `task_source.linear.team` | Linear team key | `""` | Linear team key (e.g., `ENG`) |
-| `task_source.linear.project` | Linear project slug | `""` | Optional project filter |
-| `task_source.linear.status_filter` | Linear state name | `Todo` | Which state to pick up issues from |
 
 ### Nightly mode
 
