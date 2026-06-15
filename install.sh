@@ -44,6 +44,7 @@ fi
 # ── Manifest ─────────────────────────────────────────────────────────────────
 MANIFEST=(
     ".starterpack/CLAUDE.md"
+    ".starterpack/config.yaml"
     ".gitattributes"
     ".starterpack/agent_instructions/BEHAVIORS_MANIFEST.xml"
     ".starterpack/agent_instructions/LIFECYCLE_MANIFEST.xml"
@@ -356,6 +357,13 @@ for file in "${MANIFEST[@]}"; do
     dest_dir=$(dirname "$dest_path")
     if [ ! -d "$dest_dir" ]; then
         mkdir -p "$dest_dir"
+    fi
+
+    # Preserve user config — never overwrite config.yaml
+    if [ "$(basename "$file")" = "config.yaml" ] && [ -f "$dest_path" ]; then
+        echo -e "  ${YELLOW}[keep] $file (user config preserved)${RESET}"
+        skipped=$((skipped + 1))
+        continue
     fi
 
     cp -f "$source_path" "$dest_path"

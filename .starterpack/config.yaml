@@ -1,0 +1,15 @@
+# .starterpack/config.yaml
+# Agent runtime configuration for the starterpack orchestrator.
+
+task_source:
+  provider: github  # currently only "github" is supported
+
+  github:
+    label: "autonomously-nightly"  # label to filter issues for nightly processing
+
+nightly:
+  mode: "pickup-one"   # "pickup-one" or "pickup-many"
+
+agent_permissions:
+  auto_merge: false     # If true, agent merges PR after CI passes. Default: false (PR left open)
+  auto_close: false     # If true, agent transitions issue to Done/Closed after merge. Default: false
