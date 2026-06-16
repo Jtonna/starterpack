@@ -3,7 +3,7 @@
   <summary>
     Authoritative reference for all GitHub issue operations: reading configuration,
     querying and creating issues, posting comments via the queue, managing labels,
-    closing issues, and resolving the base branch for multi-ticket work.
+    and closing issues.
   </summary>
 
   <definition>
@@ -264,7 +264,7 @@
 
           Closes #42
 
-        PR body for work targeting a feature branch:
+        PR body for work targeting a base feature branch:
           ## Summary
           Implements session clearing for the auth overhaul.
 
@@ -285,42 +285,6 @@
 
       If auto_close is false (the default), never call gh issue close — always
       close via PR body reference instead.
-    </rule>
-
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       BASE BRANCH RESOLUTION
-       ═══════════════════════════════════════════════════════════════════════ -->
-
-  <section name="base-branch-resolution">
-
-    <rule order="1">
-      Most issues are standalone: their base branch is main. Branches are cut from
-      main and their PRs target main.
-    </rule>
-
-    <rule order="2">
-      An issue is part of multi-ticket work when it appears as a child in a parent
-      feature issue's task list (or the human directs it). Multi-ticket work shares
-      a base feature branch (feature/{parent-number}-{desc}) cut from main, where
-      {parent-number} is the parent feature issue.
-    </rule>
-
-    <rule order="3">
-      To resolve the base branch for a child issue, look for the parent's base
-      feature branch:
-
-        git branch -r | grep "feature/{parent-number}-"
-
-      If it exists:
-        - It is the mandatory base branch for the child's work.
-        - All branches for the child are cut from it, and PRs target it (not main).
-        - Log: "Issue #{current} is a child of parent feature #{parent}, using base
-          branch feature/{parent-number}-..."
-
-      If it does not exist yet, treat the child as standalone and default to main
-      until the base feature branch is created.
     </rule>
 
   </section>
