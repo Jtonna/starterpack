@@ -72,7 +72,7 @@
   <behavior name="github-issues" file="behaviors/github-issues.xml">
     Authoritative reference for all GitHub issue operations: reading configuration,
     querying and creating issues, posting comments via the queue, managing labels,
-    closing issues, and detecting epic parent relationships.
+    and closing issues.
   </behavior>
 
 </behaviors-manifest>

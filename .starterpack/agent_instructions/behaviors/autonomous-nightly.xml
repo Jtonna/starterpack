@@ -124,7 +124,7 @@
 
       GitHub issue closure is handled by the PR body:
         - PRs targeting main use "Closes #{number}" (GitHub auto-closes on merge)
-        - PRs targeting feature branches use "Relates to #{number}" (no premature closure)
+        - PRs targeting base feature branches use "Relates to #{number}" (no premature closure)
 
       The only GitHub issue operations the nightly lifecycle may perform directly are:
         - Reading issue content and comments (gh issue view, gh issue list)
@@ -182,18 +182,18 @@
   <section name="pending-close-label">
 
     <rule name="LABEL_PURPOSE">
-      The "pending-close" label signals that an epic child issue has completed work
-      merged into the epic's feature branch, but the issue cannot close yet because
+      The "pending-close" label signals that a child issue has completed work
+      merged into its base feature branch, but the issue cannot close yet because
       GitHub only auto-closes issues when a PR merges to the default branch (main).
-      The issue will auto-close when the final epic PR merges to main.
+      The issue will auto-close when the base feature branch's final PR merges to main.
     </rule>
 
     <rule name="WHEN_TO_ADD">
       Add the "pending-close" label to an issue after successfully merging a child
-      PR into an epic's feature branch (not main). Use:
+      PR into a base feature branch (not main). Use:
         gh issue edit {number} --add-label "pending-close"
       This is performed by the PR lifecycle's HANDOFF phase when the PR targets
-      a feature branch.
+      a base feature branch.
     </rule>
 
     <rule name="DETECT_SKIP">
@@ -204,9 +204,10 @@
 
     <rule name="LABEL_LIFECYCLE">
       The "pending-close" label is transient:
-      - Added: after a child PR merges to the epic's feature branch.
-      - Removed: automatically becomes irrelevant when the epic's final PR merges
-        to main and GitHub auto-closes the issue. No explicit removal is needed.
+      - Added: after a child PR merges to the base feature branch.
+      - Removed: automatically becomes irrelevant when the base feature branch's
+        final PR merges to main and GitHub auto-closes the issue. No explicit
+        removal is needed.
     </rule>
 
   </section>

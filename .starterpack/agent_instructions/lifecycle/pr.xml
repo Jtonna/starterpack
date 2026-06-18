@@ -4,7 +4,7 @@
     Creates the pull request, waits for CI checks to pass, and handles the
     next-child loop for multi-ticket work. Issue closure is handled via
     "Closes #N" in the PR body (for main-targeting PRs) or "Relates to #N"
-    (for feature-branch-targeting PRs).
+    (for base-feature-branch-targeting PRs).
   </summary>
 
   <uses-behavior name="pr-template" />
@@ -36,7 +36,7 @@
         |
         +~~ more children ~~> [PLANNING]
         |
-        +~~ feature branch done ~~> [FINAL_PR] ~~> [FINAL_CI_GATE] ~~> complete
+        +~~ base feature branch done ~~> [FINAL_PR] ~~> [FINAL_CI_GATE] ~~> complete
         |
         +~~ done ~~> complete
   -->
@@ -50,8 +50,8 @@
       <action>
         Include the appropriate issue reference in the PR body:
         - If the PR targets main: use "Closes #{number}" so GitHub auto-closes the issue on merge.
-        - If the PR targets a feature branch: use "Relates to #{number}" to avoid premature closure.
-          The final feature-branch-to-main PR will use "Closes #{number}".
+        - If the PR targets a base feature branch: use "Relates to #{number}" to avoid premature closure.
+          The final base-feature-branch-to-main PR will use "Closes #{number}".
       </action>
       <action>Push all remaining commits to remote</action>
       <action>Create the PR via "gh pr create" targeting the base branch</action>
@@ -87,19 +87,19 @@
     <actions>
       <action>Report PR URL to the human for review.</action>
       <action>
-        If the PR targeted a feature branch (not main), add the "pending-close"
+        If the PR targeted a base feature branch (not main), add the "pending-close"
         label to the issue to signal that work is complete but the issue must
-        stay open until the epic's final PR merges to main:
+        stay open until the base feature branch's final PR merges to main:
           gh issue edit {number} --add-label "pending-close"
       </action>
       <action>
-        Check for remaining open child issues (gh issue list --state open --label {epic-label}).
-        If more children exist: checkout the base branch, pick the next child
+        Check the parent feature issue's task list for remaining open child issues.
+        If more children exist: checkout the base feature branch, pick the next child
         issue, and loop to PLANNING for that child.
       </action>
       <action>
-        If all children are complete and the base branch is a feature branch:
-        proceed to FINAL_PR to merge the feature branch to main.
+        If all children are complete and the base branch is a base feature branch:
+        proceed to FINAL_PR to merge the base feature branch to main.
       </action>
       <action>
         If all children are complete and the base branch is main:
@@ -114,14 +114,15 @@
     <actor>Orchestrator launches a PR agent (reasoning tier)</actor>
     <actions>
       <action>
-        Checkout the feature branch. Run a final documentation review
-        (diff the full feature branch against main).
+        Checkout the base feature branch. Run a final documentation review
+        (diff the full base feature branch against main).
       </action>
       <action>
-        Use "Closes #{epic-number}" in the final PR body to close the epic issue on merge.
+        Use "Closes #{parent-number}" in the final PR body to close the parent
+        feature issue on merge.
       </action>
-      <action>Push the feature branch to remote</action>
-      <action>Create the final PR from the feature branch to main via "gh pr create"</action>
+      <action>Push the base feature branch to remote</action>
+      <action>Create the final PR from the base feature branch to main via "gh pr create"</action>
       <action>Report the final PR URL to the orchestrator</action>
     </actions>
     <on-success>Proceed to FINAL_CI_GATE</on-success>
